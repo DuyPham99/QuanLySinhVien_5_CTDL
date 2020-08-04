@@ -1,0 +1,1451 @@
+#include <graphics.h> 
+#include <iostream>
+#include <stdio.h>
+#include <cstdlib>
+#include <ctime>
+#include <string.h>
+#include<iomanip>
+#include <fstream>
+#include <Math.h>
+using namespace std;
+//bien
+struct SINHVIENDK{
+	// khong trung
+	char MASV[12];
+	float DIEM;
+	SINHVIENDK *next = NULL;
+};
+typedef struct{
+	SINHVIENDK *pFirst=NULL;
+	SINHVIENDK *pLast=NULL;
+} DSDANGKY;
+typedef struct{
+	// khong trung
+	char MAMH[10];
+	char TENMH[1000];
+	// so tin chi li thuyet
+	float STCLT=0;
+	// so tin chi thuc hanh
+	float STCTH=0;
+} MONHOC;
+typedef struct {
+	// khong trung
+	int MALOPTC;
+	char MAMH[10];
+	char NIENKHOA[50];
+	int HOCKY;
+	int NHOM;
+	int MAX,MIN;
+	DSDANGKY *dssv;
+}LOP;
+struct SINHVIEN{
+	// khong trung
+	char MASV[12];
+	char HO[1000];
+	char TEN[1000];
+	char PHAI[1000];
+	char MALOP[15];
+	char SDT[10];
+	int NAM;
+	struct SINHVIEN *next = NULL;
+} ;
+// dsach
+typedef struct{
+  int soluong=0;
+  MONHOC *monhoc[300];
+} DSMONHOC;
+
+struct DSSINHVIEN{
+	int soLuong = 0;
+	SINHVIEN *pFirst = NULL;
+	SINHVIEN *pLast = NULL;
+};
+
+// cay nhi phan tim kiem
+struct dslop{
+	int key;
+	int bf;
+	LOP lop;
+	struct dslop *left = NULL;
+	struct dslop *right = NULL;
+} ;
+typedef struct dslop *DSLOP;
+
+//method
+void Insert(DSLOP &pavltree, int x, LOP lop);
+DSLOP Rotate_Left(DSLOP root);
+DSLOP Rotate_Right(DSLOP ya);
+void LeftBalance(DSLOP &P);
+void RightBalance(DSLOP &P);
+DSLOP search(DSLOP,int);
+// file
+void LuuLTC(DSLOP);
+void LuuSV(DSSINHVIEN listSV);
+//xuat
+void XuatMH(DSMONHOC listMH);
+void XuatLTC(DSLOP);
+void XuatSV(DSSINHVIEN listSV, char maLop[]);
+// graphics method
+void gotoxy(int x, int y)
+{
+    static HANDLE h = NULL;  
+    if(!h)
+        h = GetStdHandle(STD_OUTPUT_HANDLE);
+    COORD c = { x, y };  
+    SetConsoleCursorPosition(h,c);
+}
+
+void HinhVuong(int x1,int y1, int x2, int y2){
+	for(int i=x1;i<=x2; i++){
+		gotoxy(i,y1);
+		cout << "-";
+	}
+	for(int i=y1;i<=y2; i++){
+		gotoxy(x1,i);
+		cout << "-";
+	}
+		for(int i=x1;i<=x2; i++){
+		gotoxy(i,y2);
+		cout << "-";
+	}
+	for(int i=y1;i<=y2; i++){
+		gotoxy(x2,i);
+		cout << "-";
+	}	
+}
+// CHECKS METHOD
+int KiemTraKiTu(char text[]){
+	for(int i=0; i<strlen(text); i++){
+		if( ((int)text[i] <65 || (int)text[i] >90) ) {
+			if (((int)text[i]>47 || (int)text[i] < 58)) continue;
+			return 0; 
+		}
+	}
+	return 1;
+}
+// kiem tra xem mltc da ton tai ??
+DSLOP KiemTraMLTC(DSLOP lop, int mltc){
+	if(search(lop,mltc) == NULL ) return NULL;
+	return search(lop,mltc);
+}
+int KiemTraTrungLTC(DSLOP root, LOP *temp){
+	if(root != NULL)    
+	   {
+	      KiemTraTrungLTC(root->left,temp);
+	      KiemTraTrungLTC(root->right,temp);
+	      if (root->lop.HOCKY == temp->HOCKY && strcmp(root->lop.MAMH,temp->MAMH) == 0 && strcmp(root->lop.NIENKHOA,temp->NIENKHOA) ==0 && 
+		  root->lop.NHOM == temp->NHOM) return 0; 
+		  
+	   }
+	   
+	   return 1;
+}
+int KiemTraKhoangTrang(char ch[]){
+	if (strlen(ch) == 0) return 0;
+	for (int i=0; i< strlen(ch); i++){
+		if((int) ch[i] == 32) return 0;
+	}
+	return 1;
+}
+int KiemTraSo(char so[]){
+	for (int i=0; i< strlen(so); i++){
+		if (so[i] < 48 or so[i]>57) return 0;
+	}
+	return 1;
+}
+MONHOC* KiemTraMH(DSMONHOC &listMH, char maMH[]){
+	for (int i=0; i< listMH.soluong; i++){
+		if( strcmp(listMH.monhoc[i]->MAMH, maMH)  == 0) {
+			return listMH.monhoc[i];
+		}
+	}
+	return NULL;
+}
+int KiemTraSV(DSSINHVIEN listSV,char maSV[]){
+	if(listSV.pFirst == NULL) return 1;	
+	for(SINHVIEN *i = listSV.pFirst; i!=NULL; i=i->next){
+		if(strcmp(i->MASV,maSV) == 0) return 0;
+	}
+	return 1;
+}
+// cac ham can thiet
+void InHoa(char ch[]){
+	for (int i=0; i< strlen(ch); i++){
+		ch[i] = toupper(ch[i]);
+	}
+}
+char  *toChar(int number)
+    {
+        int n = log10(number) + 1;
+        int i;
+      char *numberArray = new char;
+        for ( i = 0; i < n; ++i, number /= 10 )
+        {
+            numberArray[i] = number % 10;
+        }
+        return numberArray;
+}
+
+// tao danh sach lop TC la cay nhi phan AVL
+void Create_AVLTree(DSLOP &root,LOP lop){ 
+	int khoa, noidung;
+	char so[10];
+	DSLOP p;
+  
+	if (root==NULL)
+	{ 
+		p = new dslop();
+		p->key = lop.MALOPTC;	p->lop = lop;   p->bf   = 0 ;   
+		p->left = NULL;   p->right = NULL;
+		root =p;
+    } else Insert(root,lop.MALOPTC,lop);
+}
+// them vao danh sach lopTC
+void Insert(DSLOP &pavltree, int x, LOP lop)
+{
+   DSLOP   fp, p, q,    	
+           fya, ya,     	              	
+           s;           
+   int imbal;           	
+
+	   fp = NULL;   p = pavltree;
+	   fya = NULL;   ya = p;
+
+   while(p != NULL)
+   {
+	      if (x == p->key)  
+	         return;
+	      if (x < p->key)
+		 	q = p->left;
+	      else q = p->right;
+	      if(q != NULL)
+	         if(q->bf != 0) 
+	         { fya = p;
+	            ya = q;
+	         }
+	      fp = p;
+	      p = q;
+   }
+
+		q = new dslop();
+		q->key =x;  q->lop = lop;  q->bf = 0;
+		q->left = NULL;  q->right = NULL;
+    if(x < fp->key)
+      fp->left = q;
+   else      fp->right = q;
+   if(x < ya->key)
+      p = ya->left;
+   else
+      p = ya->right;
+   s = p;   
+   while(p != q)
+   { if(x < p->key)
+      { p->bf = 1;
+         p = p->left;
+      }
+      else
+      {  	p->bf = -1;
+	 	p = p->right;
+      }
+   }
+   if(x < ya->key)
+      imbal = 1;
+   else
+      imbal = -1;
+
+   if(ya->bf == 0)
+   { ya->bf = imbal;
+      return;
+   }
+   if(ya->bf != imbal)
+   { ya->bf = 0;
+      return;
+   }
+
+   if(s->bf == imbal)   
+   { if(imbal == 1)   
+         p = Rotate_Right(ya);
+      else               
+         p = Rotate_Left(ya);
+      ya->bf = 0;
+      s->bf = 0;
+   }
+   else                 
+   { if(imbal == 1)    
+      { ya->left = Rotate_Left(s);
+         p = Rotate_Right(ya);
+      }
+      else            
+      { 	ya->right = Rotate_Right(s);
+	 	p = Rotate_Left(ya);
+      }
+      if(p->bf == 0)    
+      { ya->bf = 0;
+         s->bf = 0;
+      }
+      else
+         if(p->bf == imbal)
+         { ya->bf = -imbal;
+            s->bf = 0;
+         }
+         else
+         { ya->bf = 0;
+            s->bf = imbal;
+         }
+      p->bf = 0;
+   }
+   if(fya == NULL)
+      pavltree = p;
+   else
+      if(ya == fya->right)
+         fya->right = p;
+      else
+         fya->left = p;
+}
+// cac phep toan can bang cay nhi phan
+DSLOP Rotate_Left(DSLOP root)
+{
+   DSLOP p;
+   if(root == NULL)
+      printf("Khong the xoay trai vi cay bi rong.");
+   else
+      if(root->right == NULL)
+	      printf("Khong the xoay trai vi khong co nut con ben phai.");
+      else
+      {
+	      p = root->right;
+	      root->right = p->left;
+	      p->left = root;
+      }
+   return p;
+}
+DSLOP Rotate_Right(DSLOP ya)
+{
+   DSLOP s;
+  if(ya == NULL)
+      printf("Khong the xoay phai vi cay bi rong.");
+   else
+      if(ya->left == NULL)
+	      printf("Khong the xoay phai vi khong co nut con ben trai.");
+      else
+      {
+	      s = ya->left;
+	      ya->left = s->right;
+	      s->right = ya;
+      }
+   return s;
+} 
+void Left_Balance(DSLOP &P)
+{
+	switch(P->left->bf){
+	case 1: //m?t cân b?ng trái trái
+			Rotate_Right(P);
+			P->bf = 0;
+			P->right->bf = 0;
+			break;
+	case 2: //Ghi chú: cho bi?t dây là tru?ng h?p m?t cân b?ng nào?
+		Rotate_Left(P->left);
+		Rotate_Right(P);
+		switch(P->bf){
+			case 0:
+			P->left->bf= 0;
+			P->right->bf= 0;
+			break;
+			case 1:
+			P->left->bf= 0;
+			P->right->bf= 2;
+			break;
+			case 2:
+			P->left->bf= 1;
+			P->right->bf= 0;
+			break;
+		} P->bf = 0;
+		break;
+	}
+}
+void Right_Balance(DSLOP &P)
+{
+switch(P->right->bf){
+	case 1: //Ghi chú: cho bi?t dây là tru?ng h?p m?t cân b?ng nào?
+		Rotate_Right(P->right);
+		Rotate_Left(P);
+		switch(P->bf){
+			case 0:
+			P->left->bf= 0;
+			P->right->bf= 0;
+			break;
+			case 1:
+			P->left->bf= 1;
+			P->right->bf= 0;
+			break;
+			case 2:
+			P->left->bf= 0;
+			P->right->bf= 2;
+			break;
+		} P->bf = 0;
+	break;
+	case 2: //Ghi chú: cho bi?t dây là tru?ng h?p m?t cân b?ng nào?Tài li?u hu?ng d?n th?c hành môn C?u trúc d? li?u và gi?i thu?t
+		Rotate_Left(P);
+		P->bf = 0;
+		P->left->bf = 0;
+	break;
+}
+} 
+DSLOP rp;
+void  remove_case_3 (DSLOP  &r )
+{
+  if (r->left != NULL)
+     remove_case_3 (r->left);
+   //den day r la nut cuc trai cua cay con ben phai co nut goc la rp}
+    else 
+	{
+   rp->key = r->key;  	//Chep noi dung cua r sang rp ";
+   rp->lop =r->lop;	//  de lat nua free(rp)
+   rp = r;           	
+   r = rp->right;
+	  }
+}
+void  xoaLTC(DSLOP &p,int x)
+{
+	if (p == NULL)  printf ("Khong tim thay");
+	else
+	  if (x < p->key)  xoaLTC (p->left,x);
+	  else if (x > p->key)
+		  xoaLTC ( p->right,x);
+	       else   	// p->key = x
+	       {
+		 rp = p;
+              if (rp->right == NULL)  p = rp->left;   
+	// p là nút lá hoac la nut chi co cay con ben trai
+		 else 	if (rp->left == NULL)
+			   p = rp->right;  // p là nut co cay con ben phai
+			else remove_case_3 (rp->right);
+		 delete rp;
+	       }
+}
+void RemoveNode(DSLOP &dslop, int key){
+	if (dslop == NULL) return;
+	if (dslop->key > key){
+		RemoveNode(dslop,key);
+		Left_Balance(dslop);
+	} else if (dslop->key < key ){
+		RemoveNode(dslop,key);
+		Right_Balance(dslop);
+	} else {
+		// xoa nhu xoa nut root tren BST
+		xoaLTC(dslop,key);
+	}
+}
+DSLOP search(DSLOP root, int x)
+{
+   DSLOP p = NULL;
+   p = root;
+   while(p != NULL && x!=p->key)
+     if(x < p->key)
+         p = p->left;
+      else
+         p = p->right;
+	return(p); 
+}
+void Posorder(DSLOP root)
+{
+   if(root != NULL)    
+	   {
+	      Posorder(root->left);
+	      Posorder(root->right);;
+		  cout << right << setw(9) << root->lop.MALOPTC << "|";
+		  cout << right << setw(14) << root->lop.MAMH << "|";
+	      cout << right << setw(15) << root->lop.HOCKY << "|";
+		  cout << right << setw(16) << root->lop.NIENKHOA << "|";
+		  cout << right << setw(11) << root->lop.NHOM << "|";
+		  cout << right << setw(13) << root->lop.MIN << "|";
+		  cout << right << setw(12) << root->lop.MAX << "|" << endl;
+	   }
+}
+// tu dong sinh ma lop tin chi
+int SinhMLTC(DSLOP root){
+	// ham sinh ngay nhien
+	// sinh tu 0 - randmax, dinh nghia san trong thu vien <cstdlib>
+	srand(time(NULL));
+	int number = rand();
+	// kiem tra xem MLTC co ton tai chua
+	while( (search(root,number) != NULL) || number==0) {
+			number = rand();
+	}
+	return number;
+}
+// a
+// mo lop tin chi (LTC)
+void ThemLTC(DSLOP &root,DSMONHOC listMH, char nienKhoa[], int hocKy){
+	char min[1000],max[1000],nhom[1000];
+	
+	LOP tempLop; 
+	tempLop.HOCKY = hocKy;
+	strcpy(tempLop.NIENKHOA,nienKhoa);
+	// tao MLTC: tu dong sinh
+	 tempLop.MALOPTC = SinhMLTC(root);
+	// nhap MMH
+	mmh:
+	cout << "Nhap MMH: ";
+	fflush(stdin);
+	gets(tempLop.MAMH);
+	InHoa(tempLop.MAMH);
+	if(strlen(tempLop.MAMH) == 0) return;
+	if(KiemTraKhoangTrang(tempLop.MAMH) == 0 || KiemTraKiTu(tempLop.MAMH) == 0){
+		cout << "*Khong duoc bo trong hoac chua khoang trang, chi chua chu va so!!" << endl;
+		goto mmh;
+	}
+	if (KiemTraMH(listMH,tempLop.MAMH) == NULL){
+		cout << "*Ma mon hoc khong ton tai!!" << endl;
+		goto mmh;
+	}
+	//nhom
+	nhom:
+	cout << "Nhap nhom: ";
+	fflush(stdin);
+	cin >> nhom;
+	if(KiemTraSo(nhom) == 0){
+		cout << "*Phai la so!!!" << endl;
+		goto nhom;
+	}
+	tempLop.NHOM = atoi(nhom);
+	// kiem tra trung lich hoc:
+	if (KiemTraTrungLTC(root,&tempLop) == 0){
+		cout << "*Lich hoc da ton tai!!" << endl;
+		goto mmh;
+	}
+	// so SV min
+	min:
+	cout << "Nhap So Luong SV toi thieu (MIN): ";
+	fflush(stdin);
+	gets(min);
+	if(KiemTraSo(min) == 0){
+		cout << "Khong phai la so! Vui long nhap lai.." << endl;
+		goto min;
+	}
+	tempLop.MIN = atoi(min);
+	// so SV max
+	max:
+	cout << "Nhap So Luong SV toi da (MAX): ";
+	fflush(stdin);
+	gets(max);
+	if(KiemTraSo(max) == 0){
+		cout << "Khong phai la so! Vui long nhap lai.." << endl;
+		goto max;
+	}
+	tempLop.MAX = atoi(max);
+	Create_AVLTree(root,tempLop);
+}
+// xoa lop tin chi
+void XoaLTC(DSLOP &root,int mltc){
+	if (KiemTraMLTC(root,mltc) == 0 ){
+		cout << "Ma lop tin chi khong ton tai!!!";
+		return;
+	}
+	xoaLTC(root,mltc);
+	cout << "DA XOA THANH CONG 1 LTC!!";
+}
+void SuaLTC(DSLOP &root,DSMONHOC listMH){
+	LOP *tempLop = new LOP;
+	char mltc[1000];
+	mltc:
+	cout << "Nhap Ma Lop Tin Chi: ";
+	fflush(stdin);
+	gets(mltc);
+	if (strlen(mltc) == 0) return;
+	if(KiemTraMLTC(root,atoi(mltc)) == NULL){
+		cout << "*Ma lop tin chi khong ton tai!!!" << endl;
+		goto mltc;
+	}
+	
+	char min[1000],max[1000],nhom[1000];
+	DSLOP temp = search(root,atoi(mltc));
+	// tao mot bien tam de lay gia tri
+	*tempLop = temp->lop;
+	 mmh:
+	// nhap MMH
+	cout << "Nhap MMH: ";
+	fflush(stdin);
+	gets(tempLop->MAMH);
+	InHoa(tempLop->MAMH);
+	// giu gia tri cu
+	if (strlen(tempLop->MAMH) == 0) strcpy(tempLop->MAMH,temp->lop.MAMH);
+	if(KiemTraKhoangTrang(tempLop->MAMH) == 0 || KiemTraKiTu(tempLop->MAMH) == 0){
+		cout << "Khong duoc bo trong hoac chua khoang trang, chi chua chu va so!!" << endl;
+		goto mmh;
+	}
+	if (KiemTraMH(listMH,tempLop->MAMH) == NULL){
+		cout << "*Khong ton tai!" << endl;
+		goto mmh;
+	}
+	
+	//nhom
+	nhom:
+	cout << "Nhap Nhom: ";
+	fflush(stdin);
+	gets(nhom);
+	if (strlen(nhom) == 0){
+		tempLop->NHOM = temp->lop.NHOM;
+	} else {
+		if(KiemTraSo(nhom) == 0){
+			cout << "*Phai la so!!!" << endl;
+			goto nhom;
+		}
+		tempLop->NHOM = atoi(nhom);
+		// kiem tra xem co co bi trung lich khong
+		if (KiemTraTrungLTC(root,tempLop) == 0){
+			cout << "*Lich bi trung!";
+			goto mltc;
+		}
+	}
+	// so SV min
+	min:
+	cout << "Nhap So Luong SV toi thieu (MIN): ";
+	fflush(stdin);
+	gets(min);
+	if(strlen(min) == 0){
+		tempLop->MIN = temp->lop.MIN;
+	} else {
+		if(KiemTraSo(min) == 0){
+			cout << "*Khong phai la so! Vui long nhap lai.." << endl;
+			goto min;
+		}
+		tempLop->MIN = atoi(min);
+	}
+	// so SV max
+	max:
+	cout << "Nhap So Luong SV toi da (MAX): ";
+	fflush(stdin);
+	gets(max);
+	if (strlen(max) == 0){
+		tempLop->MAX = temp->lop.MAX;
+	} else {
+		if(KiemTraSo(max) == 0){
+		cout << "*Khong phai la so! Vui long nhap lai.." << endl;
+		goto max;
+		}
+		tempLop->MAX = atoi(max);
+	}
+	// cap nhat bang cach xoa xong them lai
+//	KiemTraMLTC(root,tempLop.MALOPTC)->lop = tempLop;
+	temp->lop = *tempLop;
+}
+//c
+void ThemNodeSV(DSSINHVIEN &listSV,SINHVIEN *sinhVien){
+	SINHVIEN *temp;
+	SINHVIEN *i;
+	if (listSV.pFirst == NULL){
+		listSV.soLuong++;
+		listSV.pFirst = sinhVien;
+		listSV.pLast = sinhVien;
+		return;
+	} 
+	// tim vi tri can them  &&
+	string ch1="";
+	string ch2="";
+	for(i = listSV.pFirst; i!=NULL ; temp=i, i=i->next){
+		ch1 = sinhVien->MALOP;
+		ch1 = ch1 + sinhVien->MASV;
+		ch2 = i->MALOP;
+		ch2 = ch2 + i->MASV;
+		cout << ch1 << " " << ch2 <<endl;
+		if(strcmp(ch1.c_str(),ch2.c_str()) < 0) break;
+	}
+	if( i == listSV.pFirst){
+		sinhVien->next = listSV.pFirst;
+		listSV.pFirst = sinhVien;
+		listSV.soLuong++;
+		return;
+	} else
+	if (i == NULL){
+		listSV.pLast->next = sinhVien;
+		listSV.pLast = sinhVien;
+		listSV.soLuong++;
+		return;
+	}
+	listSV.soLuong++;
+	temp->next = sinhVien;
+	sinhVien->next = i;
+}
+void XoaNodeSV(DSSINHVIEN &listSV,char maSV[]){
+	SINHVIEN *t;
+	if(strcmp(listSV.pFirst->MASV,maSV) == 0){
+		SINHVIEN *temp = listSV.pFirst;
+		listSV.pFirst = listSV.pFirst->next;
+		delete temp;
+	} else
+	for (SINHVIEN *i = listSV.pFirst; i!= NULL;t=i, i=i->next){
+		if ( strcmp(i->MASV,maSV) == 0){
+			t->next = i->next;
+			if (i == listSV.pLast) listSV.pLast = t;
+			delete i;
+			break;
+		}
+	}
+	LuuSV(listSV);
+}
+void SuaNodeSV(DSSINHVIEN &listSV, SINHVIEN *sv){
+	SINHVIEN *i;
+	for(i=listSV.pFirst; i!= NULL && i!=sv; i=i->next);
+	i = sv;
+	LuuSV(listSV);
+}
+void ThemSV(DSSINHVIEN &listSV,char maLop[]){
+	
+	while(1){
+		SINHVIEN *sinhVien = new SINHVIEN;
+		strcpy(sinhVien->MALOP,maLop);
+		system("cls");
+		XuatSV(listSV,sinhVien->MALOP);
+		masv: 
+		cout << "Ma SV: ";
+		fflush(stdin);
+		gets(sinhVien->MASV);
+		InHoa(sinhVien->MASV);
+		if ( strlen(sinhVien->MASV) == 0) return;
+		if (KiemTraKiTu(sinhVien->MASV) == 0){
+			cout << "ERROR: Khong duoc chua ki tu dac biet!" << endl;
+			goto masv;
+		}
+		
+		if(KiemTraKhoangTrang(sinhVien->MASV) == 0 || strlen(sinhVien->MASV) > 12){
+			cout << "ERROR: Khong duoc chua khoang trang va do dai khong qua 12 ki tu!" << endl;
+			goto masv;
+		}
+		if( KiemTraSV(listSV,sinhVien->MASV) == 0){
+			cout << "ERROR: MSV da ton tai!" << endl;
+			goto masv;
+		}
+		
+		// ho
+		ho:
+		cout << "Nhap Ho: ";
+		fflush(stdin);
+		gets(sinhVien->HO);
+		InHoa(sinhVien->HO);
+		if ( strlen(sinhVien->HO) == 0) return;
+		if (KiemTraKiTu(sinhVien->HO) == 0){
+			cout << "ERROR: Khong duoc chua ki tu dac biet!" << endl;
+			goto ho;
+		}
+		
+		// ten
+		ten:
+		cout << "Nhap Ten: ";
+		fflush(stdin);
+		gets(sinhVien->TEN);
+		InHoa(sinhVien->TEN);
+		if ( strlen(sinhVien->TEN) == 0) return;
+		if (KiemTraKiTu(sinhVien->TEN) == 0){
+			cout << "ERROR: Khong duoc chua ki tu dac biet!" << endl;
+			goto ten;
+		}
+		// phai
+		phai:
+		cout << "Phai (NAM/NU):";
+		gets(sinhVien->PHAI);
+		InHoa(sinhVien->PHAI);
+		if ( strlen(sinhVien->PHAI) == 0) return;
+		if ( strcmp(sinhVien->PHAI,"NAM") !=0 && strcmp(sinhVien->PHAI,"NU") !=0){
+			cout << "ERROR: Sai cu phap!!!" << endl;
+			goto phai;
+		}
+		//sdt
+		sdt:
+		cout <<"SDT: ";
+		fflush(stdin);
+		gets(sinhVien->SDT);
+		if (strlen(sinhVien->SDT) == 0) return;
+		if(KiemTraSo(sinhVien->SDT) == 0){
+			cout << "ERROR: SDT phai la so!!" << endl;
+			goto sdt;
+		}
+		if (KiemTraKhoangTrang(sinhVien->SDT) == 0 || strlen(sinhVien->SDT) != 10){
+			cout << "ERROR: Sai cu phap" << endl;
+			goto sdt;
+		}
+		//nam nhap hoc
+		char number[5];
+		number:
+		cout << "Nam nhap hoc: ";
+		gets(number);
+		if ( strlen(number) == 0) return;
+		if(KiemTraSo(number) == 0 || atoi(number) < 2014 || KiemTraKhoangTrang(number) == 0 || strlen(number) > 4){
+			cout << "ERROR: Nam khong dung, moi nhap lai: " << endl;
+			goto number;
+		} else sinhVien->NAM = atoi(number);
+		ThemNodeSV(listSV,sinhVien);
+		LuuSV(listSV);
+	}
+
+}
+void SuaSV(DSSINHVIEN &listSV){
+	SINHVIEN sinhVien;
+	// lop
+	lop:
+	cout << "Nhap Ma Lop: ";
+	fflush(stdin);
+	gets(sinhVien.MALOP);
+	InHoa(sinhVien.MALOP);
+	if (KiemTraKiTu(sinhVien.MALOP) == 0){
+		cout << "*Khong duoc chua ki tu dac biet!" << endl;
+		goto lop;
+	}
+	
+	if(KiemTraKhoangTrang(sinhVien.MALOP) == 0 || strlen(sinhVien.MALOP) > 15 || strlen(sinhVien.MALOP) == 0){
+		cout << "*Khong duoc chua khoang trang va do dai khong qua 15 ki tu!" << endl;
+		goto lop;
+	}
+	while(1){
+		system("cls");
+		XuatSV(listSV,sinhVien.MALOP);
+	// msv
+		maSV:
+		char maSV[12];
+		cout << "MSV: ";
+		fflush(stdin);
+		gets(sinhVien.MASV);
+		InHoa(sinhVien.MASV);
+		if(strlen(sinhVien.MASV) == 0) return;
+		if (KiemTraSV(listSV,sinhVien.MASV) == NULL){
+			cout << "ERROR: Ma sinh vien khong ton tai";
+			goto maSV;
+		}
+		// ho
+		ho:
+		cout << "Nhap Ho: ";
+		fflush(stdin);
+		gets(sinhVien.HO);
+		InHoa(sinhVien.HO);
+		if(strlen(sinhVien.HO) == 0) return;
+		if (KiemTraKiTu(sinhVien.HO) == 0){
+			cout << "ERROR: Khong duoc chua ki tu dac biet!" << endl;
+			goto ho;
+		}
+		// ten
+		ten:
+		cout << "Nhap Ten: ";
+		fflush(stdin);
+		gets(sinhVien.TEN);
+		InHoa(sinhVien.TEN);
+		if(strlen(sinhVien.TEN) == 0 ) return;
+		if (KiemTraKiTu(sinhVien.TEN) == 0){
+			cout << "ERROR: Khong duoc chua ki tu dac biet!" << endl;
+			goto ten;
+		}
+		if( strlen(sinhVien.TEN) == 0){
+			cout << "*Khong duoc bo trong" << endl;
+			goto ten;
+		}
+		// phai
+		phai:
+		cout << "Phai (NAM/Nu):";
+		gets(sinhVien.PHAI);
+		InHoa(sinhVien.PHAI);
+		if(strlen(sinhVien.PHAI) == 0 ) return;
+		if ( strcmp(sinhVien.PHAI,"NAM") !=0 ||strcmp(sinhVien.PHAI,"NU") !=0){
+			cout << "ERROR: Sai cu phap!!!" << endl;
+			goto phai;
+		}
+		//sdt
+		sdt:
+		cout <<"SDT: ";
+		gets(sinhVien.SDT);
+		if(strlen(sinhVien.SDT) == 0 ) return;
+		if(KiemTraSo(sinhVien.SDT) == 0){
+			cout << "*SDT phai la so!!" << endl;
+			goto sdt;
+		}
+		if (KiemTraKhoangTrang(sinhVien.SDT) == 0){
+			cout << "SDT khong duoc chua khoang trang!" << endl;
+			goto sdt;
+		}
+		//nam nhap hoc
+		char number[5];
+		number:
+		cout << "Nam nhap hoc: ";
+		gets(number);
+		if(strlen(number) == 0 ) return;
+		if(KiemTraSo(number) == 0 || atoi(number) > 2014 || KiemTraKhoangTrang(number) == 0 || strlen(number) > 4){
+			cout << "*Nam khong dung, moi nhap lai: " << endl;
+			goto number;
+		}
+		sinhVien.NAM = atoi(number);	
+		SuaNodeSV(listSV,&sinhVien);
+}
+}
+// e
+void ThemMH(DSMONHOC &listMH, MONHOC *monHoc){
+	listMH.monhoc[listMH.soluong] = new MONHOC();
+	listMH.monhoc[listMH.soluong] = monHoc;
+	listMH.soluong++;
+}
+void XoaMH(DSMONHOC &listMH, char maMH[]){
+	for(int i=0; i < listMH.soluong; i++){
+		
+		if ( strcmp(listMH.monhoc[i]->MAMH, maMH) == 0){
+			delete listMH.monhoc[i];
+			for(i; i< listMH.soluong;i++){
+				listMH.monhoc[i] = listMH.monhoc[i+1];
+			}
+			listMH.soluong--;
+			return;
+		}
+	}
+}
+void SuaMH(DSMONHOC &listMH, MONHOC *monHoc){
+	for(int i=0; i< listMH.soluong; i++){
+		if (strcmp(listMH.monhoc[i]->MAMH,monHoc->MAMH) == 0){
+			listMH.monhoc[1] = monHoc;
+			return;
+		}
+	}
+}
+
+// list menu
+void MenuLTC(DSLOP &root,DSMONHOC &listMH){
+	while(1){
+		start:
+		char chon[10];
+		system("cls");
+		XuatLTC(root);
+		cout << "Cap Nhat Danh Sach Lop Tin Chi: " << endl;
+		cout << "1. Them Lop Tin Chi" << endl;
+		cout << "2. Xoa Lop Tin Chi" << endl;
+		cout << "3. Sua Lop Tin Chi" << endl;
+		cout << "LuaChon (1/2/3): ";
+		fflush(stdin);
+		gets(chon);	
+		
+		switch(atoi(chon)){
+			system("cls");
+			XuatLTC(root);
+			case 1:{		
+				case_1:
+				char nienkhoa[50];
+				int hocKy;
+				cout << "--THEM LOP TIN CHI--" << endl;
+				cout << "Nien Khoa: ";
+				fflush(stdin);
+				gets(nienkhoa);
+				InHoa(nienkhoa);
+				if(strlen(nienkhoa) == 0) break;
+				if(KiemTraKhoangTrang(nienkhoa) == 0) {
+					cout << "*Khong chua khoang trang hoac bo trong!!" << endl;
+					goto case_1;
+				}
+				cout << "Hoc Ky: ";
+				fflush(stdin);
+				cin >> hocKy;
+				if(hocKy== 0) break;
+				ThemLTC(root,listMH,nienkhoa,hocKy);
+				LuuLTC(root);
+				break;
+			}
+			case 2:{
+				int mltc;
+				cout << "--XOA LOP TIN CHI--" << endl;
+				cout << "Nhap Ma Lop Tin Chi Can Xoa: ";
+				cin >> mltc;
+				if(mltc == 0) break;
+				XoaLTC(root,mltc);
+				Sleep(1000);
+				LuuLTC(root);
+				break;
+			}
+			case 3:{
+				cout << "--SUA LOP TIN CHI--" << endl;
+				SuaLTC(root,listMH);
+				LuuLTC(root);
+				break;
+			}
+			case 0:{	
+				return;
+			}
+	
+		}	
+	}
+}
+//g
+void DangKyTC(LOP &lop,SINHVIEN sv){
+	SINHVIENDK *data;
+	data->DIEM = -1;
+	strcpy(data->MASV,sv.MASV);
+	SINHVIENDK *i = lop.dssv->pFirst;
+	SINHVIENDK *t;
+	for(i; i!=NULL && strcmp(i->MASV,data->MASV) < 0;t=i, i=i->next);
+	
+	if (i == NULL){
+		lop.dssv->pFirst = data;
+		lop.dssv->pLast = data;
+	} else if (i == lop.dssv->pFirst){
+		data->next = lop.dssv->pFirst;
+		lop.dssv->pFirst = data;
+	}
+	else if (i == lop.dssv->pLast){
+		lop.dssv->pLast->next = data;
+		lop.dssv->pLast = data;
+	} else {
+		data->next = t->next;
+		t->next = data;
+	}
+}
+
+// save & load
+void LuuMH(DSMONHOC &listMH){
+	ofstream xuatFile;
+	xuatFile.open("MONHOC.txt", ios::out);
+	xuatFile << listMH.soluong << endl;
+	for(int i = 0; i < listMH.soluong; i++){
+		xuatFile << listMH.monhoc[i]->MAMH << endl;
+		xuatFile << listMH.monhoc[i]->TENMH << endl;
+		xuatFile << listMH.monhoc[i]->STCTH << endl;
+		xuatFile << listMH.monhoc[i]->STCLT << endl;
+	}
+	xuatFile.close();
+}
+void DocMH(DSMONHOC &listMH){
+	ifstream docFile;
+	docFile.open("MONHOC.txt", ios::in);
+
+	docFile >> listMH.soluong;
+	string tempString;
+	for(int i = 0; i < listMH.soluong; i++){
+		listMH.monhoc[i] = new MONHOC;
+		docFile >> listMH.monhoc[i]->MAMH;
+		getline(docFile, tempString);
+		getline(docFile, tempString);
+		strcpy(listMH.monhoc[i]->TENMH,tempString.c_str());
+		docFile >>  listMH.monhoc[i]->STCTH;
+		docFile >>  listMH.monhoc[i]->STCLT;
+	}
+	docFile.close();
+}
+
+void LuuSV(DSSINHVIEN listSV){
+	ofstream xuatFile;
+	xuatFile.open("SINHVIEN.txt", ios::out);
+	xuatFile << listSV.soLuong << endl;
+	for(SINHVIEN *i = listSV.pFirst; i != NULL; i=i->next){
+		xuatFile << i->MALOP << endl;
+		xuatFile << i->MASV << endl;
+		xuatFile << i->HO << endl;
+		xuatFile << i->TEN << endl;
+		xuatFile << i->SDT << endl;
+		xuatFile << i->PHAI << endl;
+		xuatFile << i->NAM << endl;
+	}
+	xuatFile.close();
+}
+void DocSV(DSSINHVIEN &listSV){
+	ifstream docFile;
+	docFile.open("SINHVIEN.txt", ios::out);
+	int solg = 0;
+	docFile >> solg;
+	string temp;
+	for(int j=1; j <= solg; j++){
+		SINHVIEN *i = new SINHVIEN;
+		docFile >>  i->MALOP;
+		docFile >>  i->MASV;
+		getline(docFile>>ws,temp);
+		strcpy(i->HO,temp.c_str());
+		getline(docFile>>ws,temp);
+		strcpy(i->TEN,temp.c_str());
+		docFile >>  i->SDT;
+		docFile >>  i->PHAI;
+		docFile >>  i->NAM;		
+		ThemNodeSV(listSV,i);
+	}
+	docFile.close();
+}
+void LuuSVDK(DSDANGKY *listDK,LOP lop){
+	ofstream luu;
+	char fileName[strlen(toChar(lop.MALOPTC))] ;
+	strcpy(fileName,toChar(lop.MALOPTC));
+	strcat(fileName,".txt");
+	luu.open(fileName, ios::out);
+	for(SINHVIENDK *i = listDK->pFirst; i!= NULL; i=i->next){
+		luu << i->MASV << endl;
+		luu << i->DIEM << endl;
+	}
+	luu.close();
+}
+void DocSVDK(DSDANGKY *listDK,LOP lop){
+	ifstream doc;
+	
+	doc.close();
+}
+
+void tempLuuLTC(ofstream &luuFile, DSLOP root){	 
+
+	 if(root != NULL)    
+	   {
+	      tempLuuLTC(luuFile,root->left);
+	      tempLuuLTC(luuFile,root->right);
+	      luuFile << root->lop.MALOPTC << endl;
+	 	  luuFile << root->lop.MAMH << endl;
+	 	  luuFile << root->lop.NHOM << endl;
+	 	  luuFile << root->lop.HOCKY << endl;
+	 	  luuFile << root->lop.NIENKHOA << endl;
+	   	  luuFile << root->lop.MAX << endl;
+	 	  luuFile << root->lop.MIN << endl;
+		//LuuSVDK(root->lop.dssv,root->lop);
+	   } 
+}
+void LuuLTC(DSLOP root){
+	ofstream luuFile;
+	remove("LOP.txt");
+	luuFile.open("LOP.txt",ios::out |ios::app);
+	tempLuuLTC(luuFile,root);
+	luuFile.close();
+}
+
+void DocLTC(DSLOP &root){
+	LOP *tempLOP = new LOP;
+	ifstream docFile;
+	docFile.open("LOP.txt",ios::in);
+	do {
+		 docFile >> tempLOP->MALOPTC;
+	 	 docFile >>  tempLOP->MAMH ;
+	 	 docFile >>  tempLOP->NHOM;
+	 	 docFile >>  tempLOP->HOCKY ;
+	 	 docFile >>  tempLOP->NIENKHOA ;
+	   	 docFile >>  tempLOP->MAX ;
+	     docFile >>  tempLOP->MIN;
+	     Create_AVLTree(root,*tempLOP);
+	}  while(!docFile.eof());
+	docFile.close();
+}
+void MenuMH(DSMONHOC &listMH){
+	while(1){
+		start:
+		system("cls");
+		XuatMH(listMH);
+		char chon[10];
+		cout << "Cap Nhat Danh Sach Mon Hoc: " << endl;
+		cout << "1. Them Mon Hoc" << endl;
+		cout << "2. Xoa Mon Hoc" << endl;
+		cout << "3. Sua Mon Hoc" << endl;
+		cout << "LuaChon (1/2/3): ";
+		gotoxy(0,6);
+		gotoxy(18,11);
+		fflush(stdin);
+		gets(chon);	
+		gotoxy(0,7);
+		
+		switch(atoi(chon)){
+			case 1:{
+				system("cls");
+				XuatMH(listMH);
+				mmh_case1:
+				MONHOC *tempMH = new MONHOC;
+				cout<< "--THEM MON HOC--" << endl;
+				cout << "Ma Mon Hoc: ";
+				fflush(stdin);
+				gets(tempMH->MAMH);
+				InHoa(tempMH->MAMH);
+				if(strlen(tempMH->MAMH) == 0) break;
+				if( KiemTraKhoangTrang(tempMH->MAMH) == 0 ){
+					cout << "*Khong Chua Khong Trang!!" << endl;
+					goto mmh_case1;
+				}
+				
+				if( KiemTraKiTu(tempMH->MAMH) == 0 || strlen(tempMH->MAMH) == 0 || strlen(tempMH->MAMH) >10 || KiemTraKhoangTrang(tempMH->MAMH) == 0 ){
+					cout << "*Sai Cu Phap! Moi Nhap Lai" << endl;
+					goto mmh_case1;
+				}
+		
+				if( KiemTraMH(listMH,tempMH->MAMH) !=NULL ){
+					cout << "Ma Mon Hoc Bi Trung" << endl;
+					goto mmh_case1;	
+				}
+				mon:
+				cout << "Ten Mon: ";
+				fflush(stdin);
+				gets(tempMH->TENMH);
+				InHoa(tempMH->TENMH);
+				// chuyen string thanh char* de kiem tra dieu kien
+				if(strlen(tempMH->TENMH) == 0) break;
+				if( KiemTraKiTu(tempMH->TENMH) == 0 || strlen(tempMH->TENMH) == 0){
+					cout << "Sai Cu Phap! Moi Nhap Lai" << endl;
+					goto mon;
+				}
+				cout << "So Tin Chi Li Thuyet: ";
+				cin >> tempMH->STCLT;
+				if(tempMH->STCLT == 0) break;
+				cout << "So Tin Chi Thuc Hanh: ";
+				cin >> tempMH->STCTH;
+				if(tempMH->STCTH == 0) break;
+				ThemMH(listMH,tempMH);
+				LuuMH(listMH);
+				break;
+			}
+			case 2:{
+				system("cls");
+				XuatMH(listMH);
+				mmh_case2:
+				char maMH[10];
+				cout<< "--XOA MON HOC--" << endl;
+				cout << "Ma Mon Hoc: ";
+				fflush(stdin);
+				gets(maMH);
+				InHoa(maMH);
+				if(strlen(maMH) == 0) break;
+				if( KiemTraKiTu(maMH) == 0 || strlen(maMH) == 0 || strlen(maMH) >10){
+					cout << "*Sai cu phap! Moi nhap lai" << endl;
+					goto mmh_case2;	
+				}
+				if (KiemTraMH(listMH,maMH) == NULL){
+					cout << "*Ma mon hoc khong ton tai!" << endl; 
+					Sleep(1000);
+					break;
+				}
+				XoaMH(listMH,maMH);
+				cout << "Xoa Thanh Cong !!!";
+				Sleep(1000);
+				LuuMH(listMH);
+				break;
+			}
+			case 3:{
+				system("cls");
+				XuatMH(listMH);
+				char maMH[50],tenMH[300], stclt[50],stcth[50];
+				//object hoc can sua
+				MONHOC *monHoc;
+				mmh_case3:
+				cout<< "--Sua MON HOC--" << endl;
+				cout << "Ma Mon Hoc: ";
+				fflush(stdin);
+				gets(maMH);
+				InHoa(maMH);
+				if(strlen(maMH) == 0) break;
+				if( KiemTraMH(listMH,maMH) == NULL ){
+					cout << "Ma Mon Hoc Khong Ton Tai!!!";
+					break;	
+				}
+				// lay mon hoc can sua
+				monHoc = KiemTraMH(listMH,maMH);
+				cout << "Thong Tin Sua" << endl;
+				mon_case3:
+				cout << "Ten Mon: ";
+				fflush(stdin);
+				gets(tenMH);
+				InHoa(tenMH);
+				if(strlen(tenMH) == 0) {
+					// khong lam gi, giu nguyen gia tri cu
+				} else {
+					if( KiemTraKiTu(tenMH) == 0 || strlen(tenMH) == 0){
+						cout << "Sai Cu Phap! Moi Nhap Lai" << endl;
+						goto mon_case3;
+					}
+					strcpy(monHoc->TENMH,tenMH);
+				}
+				stclt:
+				cout << "So Tin Chi Li Thuyet: ";
+				fflush(stdin);
+				gets(stclt);
+				if(strlen(stclt) == 0) {
+					// giu nguyen gia tri cu
+				} else{
+					if(KiemTraSo(stclt) == 0){
+						cout <<"*Sai Cu Phap!Nhap lai...";
+						goto stclt;
+					}
+					monHoc->STCLT = atoi(stclt);
+				}
+				stcth:
+				cout << "So Tin Chi Thuc Hanh: ";
+				fflush(stdin);
+				gets(stcth);		
+				if(strlen(stcth) == 0) {
+					// giu nguyen gia tri cu
+				} else{
+					if(KiemTraSo(stcth) == 0){
+						cout <<"*Sai Cu Phap!Nhap lai...";
+						goto stcth;
+					}
+					monHoc->STCTH = atoi(stcth);
+				}
+			//	SuaMH(listMH,tempMH);
+				LuuMH(listMH);
+				break;
+			}
+			case 0:{
+				return;
+			}
+		}
+	}
+} 
+void MenuSV(DSSINHVIEN &listSV){
+	start:
+	while(1){
+	char chon[10];
+	system("cls");
+
+	cout << "Cap Nhat Danh Sach Sinh Vien: " << endl;
+	cout << "1. Them Sinh Vien" << endl;
+	cout << "2. Xoa Sinh Vien" << endl;
+	cout << "3. Sua Sinh Vien" << endl;
+	cout << "LuaChon (1/2/3): ";
+	fflush(stdin);
+	gets(chon);	
+
+	switch(atoi(chon)){
+		case 1:{
+				// lop
+			lop:
+			char maLop[15];
+			cout << "Nhap Ma Lop: ";
+			fflush(stdin);
+			gets(maLop);
+			InHoa(maLop);
+			if ( strlen(maLop) == 0) break;
+			if (KiemTraKiTu(maLop) == 0){
+				cout << "ERROR: Khong duoc chua ki tu dac biet!" << endl;
+				goto lop;
+			}
+			
+			if(KiemTraKhoangTrang(maLop) == 0 || strlen(maLop) > 15 ){
+				cout << "ERROR: Khong duoc chua khoang trang va do dai khong qua 15 ki tu!" << endl;
+				goto lop;
+			}
+			ThemSV(listSV,maLop);
+			break;
+		}
+		case 2:{
+			back:
+			char maSV[12];
+			fflush(stdin);
+			cout << "Nhap MA Sinh Vien Can Xoa: ";
+			gets(maSV);
+			InHoa(maSV);
+			if(KiemTraSV(listSV,maSV) == 0){
+				cout << "ERROR: Ma sinh vien khong ton tai!" << endl;
+				Sleep(1000);
+				break;
+			}
+			XoaNodeSV(listSV,maSV);
+			cout << "XOA THANH CONG!!" << endl;
+			Sleep(1000);
+			break;
+		}
+		case 3:{
+			SuaSV(listSV);
+			break;
+		}
+		case 0:{
+			return;
+		}
+	}
+	}
+}
+void MainMenu(DSSINHVIEN &listSV,DSMONHOC &listMH, DSLOP &root){
+	char luachon[2];	
+	while(1){	
+		system("cls");
+		strcpy(luachon,"-1");
+		cout << "\t\t\t\tMENU QUAN LY DIEM SINH VIEN THEO HE TIN CHI" << endl;
+		cout << "\t\t\t\t\t1. DANG KY LOP TIN CHI"<<endl;
+		cout << "\t\t\t\t\t2. Nhap Diem" << endl;
+		cout << "\t\t\t\t\t3. Quan Ly Mon Hoc" << endl;
+		cout << "\t\t\t\t\t4. Quan Ly Sinh Vien" << endl;
+		cout << "\t\t\t\t\t5. Quan Ly Lop Tin Chi" << endl;
+		cout << "\t\t\t\t\t6. Quan Ly Diem" << endl;
+		cout << "\t\t\t\t\t0. Thoat" << endl;
+		cout << "----------------------------------------------------------------------------------------------------" << endl;
+		cout << "Luachon: ";
+		gets(luachon);
+		switch (atoi(luachon)){
+			case 1:{
+				break;
+			}
+			case 2:{
+				
+				break;
+			}
+			case 3:{
+				MenuMH(listMH);
+				break;
+			}
+			case 4:{
+				MenuSV(listSV);
+				break;
+			}
+			case 5:{
+				MenuLTC(root,listMH);
+				break;
+			}
+			case 6:{
+				
+				break;
+			}
+		}
+		if(atoi(luachon) == 0) break;
+	}
+}
+// Xuat
+void XuatMH(DSMONHOC listMH){
+	cout << "\t\t\t\t\t\t\t\t\tDANH SACH MON HOC" << endl;
+	cout << right << setw(15) << "MMH" << "|";
+	cout << right << setw(80) << "TEN"<< "|";
+	cout << right << setw(20) << "LT"<< "|";
+	cout << right << setw(20) << "TH"<< "|";
+	cout << endl <<"------------------------------------------------------------------------------------------------------------------------------------------------------------" << endl;
+	for (int i=0; i<listMH.soluong; i++){
+		cout << right << setw(15) <<listMH.monhoc[i]->MAMH << "|";
+		cout << right << setw(80) << listMH.monhoc[i]->TENMH << "|";
+		cout << right << setw(20) << listMH.monhoc[i]->STCLT<< "|";
+		cout << right << setw(20) << listMH.monhoc[i]->STCTH << "|"<< endl;
+	}
+}
+void XuatLTC(DSLOP root){
+	cout << "\t\t\t\t\tDANH SACH LOP TIN CHI" << endl;
+	cout << right << setw(9) << "MLTC" << "|";
+	cout << right << setw(14) << "MAMH" << "|";
+	cout << right << setw(15) << "Hoc Ky" << "|";
+	cout << right << setw(16) << "Nien Khoa" << "|";
+	cout << right << setw(11) << "Nhom" << "|";
+	cout << right << setw(13) << "SV Min" << "|";
+	cout << right << setw(12) << "SV Max" << "|";
+	cout << endl <<"    ----------------------------------------------------------------------------------------------" << endl;
+	Posorder(root);
+}
+void XuatSV(DSSINHVIEN listSV, char maLop[]){
+	cout << "\t\t\t\t\tDANH SACH SINH VIEN - " << maLop<< endl;
+	cout << right << setw(13) << "MA LOP" << "|";
+	cout << right << setw(9) << "MA SV" << "|";
+	cout << right << setw(14) << "HO" << "|";
+	cout << right << setw(15) << "TEN" << "|";
+	cout << right << setw(16) << "PHAI" << "|";
+	cout << right << setw(11) << "SDT" << "|";
+	cout << right << setw(12) << "Nam" << "|";
+	cout << endl <<"    ----------------------------------------------------------------------------------------------" << endl;
+	if(listSV.pLast == NULL) return;
+	if(strcmp(listSV.pLast->MALOP,maLop) < 0 ) return;
+	int check = 0;
+	for(SINHVIEN *i = listSV.pFirst; i!=NULL; i=i->next){
+		if(strcmp(i->MALOP,maLop) != 0) continue;
+		if(strcmp(i->MALOP,maLop) != 0 && check == 1) break;
+		check = 1;
+		cout << right << setw(13) <<  i->MALOP << "|";
+		cout << right << setw(9)  <<    i->MASV << "|";
+		cout << right << setw(14) <<  i->HO << "|";
+		cout << right << setw(15) <<  i->TEN << "|";
+		cout << right << setw(16) <<  i->PHAI << "|";
+		cout << right << setw(11) <<  i->SDT << "|";
+		cout << right << setw(12) <<  i->NAM << "|";
+		cout << endl <<"    ----------------------------------------------------------------------------------------------" << endl;
+	}
+}
+int main(int argc, char *argv[])
+{
+	DSLOP root = NULL;
+	DSSINHVIEN listSV;
+	DSMONHOC listMH;
+	DocMH(listMH);
+	DocLTC(root);
+	DocSV(listSV);
+	//menu
+	MainMenu(listSV,listMH,root);
+	return 0;
+}
