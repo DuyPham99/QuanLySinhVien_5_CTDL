@@ -1,6 +1,7 @@
 #include <graphics.h> 
 #include <iostream>
 #include <stdio.h>
+#include <conio.h>
 #include <cstdlib>
 #include <ctime>
 #include <string.h>
@@ -16,11 +17,12 @@ struct SINHVIENDK{
 	SINHVIENDK *next = NULL;
 };
 typedef struct{
+	int soluong = 0;
 	SINHVIENDK *pFirst=NULL;
 	SINHVIENDK *pLast=NULL;
 } DSDANGKY;
+
 typedef struct{
-	// khong trung
 	char MAMH[10];
 	char TENMH[1000];
 	// so tin chi li thuyet
@@ -28,6 +30,12 @@ typedef struct{
 	// so tin chi thuc hanh
 	float STCTH=0;
 } MONHOC;
+
+typedef struct{
+  int soluong=0;
+  MONHOC *monhoc[300]; 
+} DSMONHOC;
+
 typedef struct {
 	// khong trung
 	int MALOPTC;
@@ -49,12 +57,6 @@ struct SINHVIEN{
 	int NAM;
 	struct SINHVIEN *next = NULL;
 } ;
-// dsach
-typedef struct{
-  int soluong=0;
-  MONHOC *monhoc[300];
-} DSMONHOC;
-
 struct DSSINHVIEN{
 	int soLuong = 0;
 	SINHVIEN *pFirst = NULL;
@@ -65,12 +67,16 @@ struct DSSINHVIEN{
 struct dslop{
 	int key;
 	int bf;
+	// data
 	LOP lop;
 	struct dslop *left = NULL;
 	struct dslop *right = NULL;
 } ;
 typedef struct dslop *DSLOP;
-
+//bien toan cuc
+	DSLOP root = NULL;
+	DSSINHVIEN listSV;
+	DSMONHOC listMH;
 //method
 void Insert(DSLOP &pavltree, int x, LOP lop);
 DSLOP Rotate_Left(DSLOP root);
@@ -84,8 +90,17 @@ void LuuSV(DSSINHVIEN listSV);
 //xuat
 void XuatMH(DSMONHOC listMH);
 void XuatLTC(DSLOP);
-void XuatSV(DSSINHVIEN listSV, char maLop[]);
+void XuatSV(DSSINHVIEN listSV);
+void XuatLTCTheoDK(DSLOP root, char nienKhoa[],int hocKy,int &check);
+void XuatSVTheoDK(DSSINHVIEN listSV, char maLop[]);
+void XuatSVDK(LOP lop);
 // graphics method
+void swap(MONHOC *&temp1,MONHOC *&temp2){
+	MONHOC *temp3;
+	temp3 = temp1;
+	temp1 = temp2;
+	temp2 = temp3;	
+}
 void gotoxy(int x, int y)
 {
     static HANDLE h = NULL;  
@@ -94,7 +109,6 @@ void gotoxy(int x, int y)
     COORD c = { x, y };  
     SetConsoleCursorPosition(h,c);
 }
-
 void HinhVuong(int x1,int y1, int x2, int y2){
 	for(int i=x1;i<=x2; i++){
 		gotoxy(i,y1);
@@ -115,9 +129,11 @@ void HinhVuong(int x1,int y1, int x2, int y2){
 }
 // CHECKS METHOD
 int KiemTraKiTu(char text[]){
+	// chu 65-90
+	// so 47-58 
 	for(int i=0; i<strlen(text); i++){
 		if( ((int)text[i] <65 || (int)text[i] >90) ) {
-			if (((int)text[i]>47 || (int)text[i] < 58)) continue;
+			if (((int)text[i] > 47 && (int)text[i] < 58)) continue;
 			return 0; 
 		}
 	}
@@ -135,16 +151,16 @@ int KiemTraTrungLTC(DSLOP root, LOP *temp){
 	      KiemTraTrungLTC(root->right,temp);
 	      if (root->lop.HOCKY == temp->HOCKY && strcmp(root->lop.MAMH,temp->MAMH) == 0 && strcmp(root->lop.NIENKHOA,temp->NIENKHOA) ==0 && 
 		  root->lop.NHOM == temp->NHOM) return 0; 
-		  
 	   }
-	   
 	   return 1;
 }
 int KiemTraKhoangTrang(char ch[]){
 	if (strlen(ch) == 0) return 0;
 	for (int i=0; i< strlen(ch); i++){
-		if((int) ch[i] == 32) return 0;
+		// ma ascii cua khoan trang = 32
+		if( (int) ch[i] == 32) return 0;
 	}
+	
 	return 1;
 }
 int KiemTraSo(char so[]){
@@ -152,6 +168,19 @@ int KiemTraSo(char so[]){
 		if (so[i] < 48 or so[i]>57) return 0;
 	}
 	return 1;
+}
+void KiemTraLop(DSLOP root, LOP *&lop, char mmh[], char nienKhoa[], int hocKy, int nhom){
+	DSLOP tempRoot = NULL;
+	if(root != NULL)    
+	   {
+	      KiemTraLop(root->left,lop,mmh,nienKhoa,hocKy,nhom);
+	      KiemTraLop(root->right,lop,mmh,nienKhoa,hocKy,nhom);
+	      if (root->lop.HOCKY == hocKy && strcmp(root->lop.MAMH,mmh) == 0 && strcmp(root->lop.NIENKHOA,nienKhoa) ==0 && 
+		  	root->lop.NHOM == nhom) {
+				lop = &root->lop;
+				return;
+		  } 
+	   }
 }
 MONHOC* KiemTraMH(DSMONHOC &listMH, char maMH[]){
 	for (int i=0; i< listMH.soluong; i++){
@@ -161,10 +190,16 @@ MONHOC* KiemTraMH(DSMONHOC &listMH, char maMH[]){
 	}
 	return NULL;
 }
-int KiemTraSV(DSSINHVIEN listSV,char maSV[]){
-	if(listSV.pFirst == NULL) return 1;	
+SINHVIEN *KiemTraSV(DSSINHVIEN listSV,char maSV[]){
+	if(listSV.pFirst == NULL) return NULL;	
 	for(SINHVIEN *i = listSV.pFirst; i!=NULL; i=i->next){
-		if(strcmp(i->MASV,maSV) == 0) return 0;
+		if(strcmp(i->MASV,maSV) == 0) return i;
+	}
+	return NULL;
+}
+int KiemTraDaDangKyLTC(DSDANGKY *listDK, char msv[]){
+	for(SINHVIENDK *k = listDK->pFirst; k!=NULL; k=k->next){
+		if(strcmp(k->MASV,msv) == 0) return 0;
 	}
 	return 1;
 }
@@ -178,7 +213,7 @@ char  *toChar(int number)
     {
         int n = log10(number) + 1;
         int i;
-      char *numberArray = new char;
+      	char *numberArray = new char;
         for ( i = 0; i < n; ++i, number /= 10 )
         {
             numberArray[i] = number % 10;
@@ -462,6 +497,22 @@ void Posorder(DSLOP root)
 		  cout << right << setw(12) << root->lop.MAX << "|" << endl;
 	   }
 }
+void DuyetTheoDK(DSLOP root,char nienKhoa[],int hocKy,int &check)
+{
+   if(root != NULL)    
+	   {
+		  DuyetTheoDK(root->left,nienKhoa,hocKy,check);
+	      DuyetTheoDK(root->right,nienKhoa,hocKy,check);
+	      if(strcmp(root->lop.NIENKHOA,nienKhoa) == 0 && root->lop.HOCKY == hocKy){
+	      	  check = 1;
+	      	  cout << right << setw(15) << root->lop.MALOPTC << "|";
+			  cout << right << setw(15) << KiemTraMH(listMH, root->lop.MAMH)->MAMH << "|";
+			  cout << right << setw(40) << KiemTraMH(listMH, root->lop.MAMH)->TENMH << "|";
+		      cout << right << setw(20) << KiemTraMH(listMH, root->lop.MAMH)->STCLT << "|";
+			  cout << right << setw(20) << KiemTraMH(listMH, root->lop.MAMH)->STCTH << "|" << endl;		  
+		  }
+	   }
+}
 // tu dong sinh ma lop tin chi
 int SinhMLTC(DSLOP root){
 	// ham sinh ngay nhien
@@ -477,9 +528,13 @@ int SinhMLTC(DSLOP root){
 // a
 // mo lop tin chi (LTC)
 void ThemLTC(DSLOP &root,DSMONHOC listMH, char nienKhoa[], int hocKy){
+	while(1){
 	char min[1000],max[1000],nhom[1000];
 	
+	system("cls");
+	XuatMH(listMH);
 	LOP tempLop; 
+	tempLop.dssv = new DSDANGKY;
 	tempLop.HOCKY = hocKy;
 	strcpy(tempLop.NIENKHOA,nienKhoa);
 	// tao MLTC: tu dong sinh
@@ -535,6 +590,8 @@ void ThemLTC(DSLOP &root,DSMONHOC listMH, char nienKhoa[], int hocKy){
 	}
 	tempLop.MAX = atoi(max);
 	Create_AVLTree(root,tempLop);
+	LuuLTC(root);
+}
 }
 // xoa lop tin chi
 void XoaLTC(DSLOP &root,int mltc){
@@ -630,6 +687,45 @@ void SuaLTC(DSLOP &root,DSMONHOC listMH){
 //	KiemTraMLTC(root,tempLop.MALOPTC)->lop = tempLop;
 	temp->lop = *tempLop;
 }
+// b
+void InDanhSachSVCuaLTC(){
+	char mmh[10], nienKhoa[50];
+	char hocKy[10],nhom[10],diem[10];
+	LOP *tempLop = NULL;
+	int i=0;
+	SINHVIENDK *k;
+	cout <<"\t\t\tMENU NHAP DIEM" << endl;
+	
+	cout << "Nien Khoa: ";
+	fflush(stdin);
+	gets(nienKhoa);
+	InHoa(nienKhoa);
+	if(strlen(nienKhoa) == 0) return;
+	
+	cout << "Hoc Ky: ";
+	fflush(stdin);
+	gets(hocKy);
+	InHoa(hocKy);
+	if(strlen(hocKy) == 0) return;
+	
+	cout << "Nhom: ";
+	fflush(stdin);
+	gets(nhom);
+	InHoa(nhom);
+	if(strlen(nhom) == 0) return;
+	
+	cout << "Ma Mon Hoc: ";
+	fflush(stdin);
+	gets(mmh);
+	InHoa(mmh);
+	if(strlen(mmh) == 0) return;	
+	// tim kiem trong danh sach lop tc lay ra danh sach sv trung khop voi dieu kien tren
+	KiemTraLop(root,tempLop,mmh,nienKhoa,atoi(hocKy),atoi(nhom));
+	k = tempLop->dssv->pFirst;
+	XuatSVDK(*tempLop);
+	fflush(stdin);
+	gets(mmh);	
+}
 //c
 void ThemNodeSV(DSSINHVIEN &listSV,SINHVIEN *sinhVien){
 	SINHVIEN *temp;
@@ -648,7 +744,6 @@ void ThemNodeSV(DSSINHVIEN &listSV,SINHVIEN *sinhVien){
 		ch1 = ch1 + sinhVien->MASV;
 		ch2 = i->MALOP;
 		ch2 = ch2 + i->MASV;
-		cout << ch1 << " " << ch2 <<endl;
 		if(strcmp(ch1.c_str(),ch2.c_str()) < 0) break;
 	}
 	if( i == listSV.pFirst){
@@ -682,12 +777,12 @@ void XoaNodeSV(DSSINHVIEN &listSV,char maSV[]){
 			break;
 		}
 	}
+	listSV.soLuong--;
 	LuuSV(listSV);
 }
-void SuaNodeSV(DSSINHVIEN &listSV, SINHVIEN *sv){
-	SINHVIEN *i;
-	for(i=listSV.pFirst; i!= NULL && i!=sv; i=i->next);
-	i = sv;
+void SuaNodeSV(DSSINHVIEN &listSV, SINHVIEN *sv,char maSV[]){
+	XoaNodeSV(listSV,maSV);
+	ThemNodeSV(listSV,sv);
 	LuuSV(listSV);
 }
 void ThemSV(DSSINHVIEN &listSV,char maLop[]){
@@ -696,7 +791,7 @@ void ThemSV(DSSINHVIEN &listSV,char maLop[]){
 		SINHVIEN *sinhVien = new SINHVIEN;
 		strcpy(sinhVien->MALOP,maLop);
 		system("cls");
-		XuatSV(listSV,sinhVien->MALOP);
+		XuatSVTheoDK(listSV,sinhVien->MALOP);
 		masv: 
 		cout << "Ma SV: ";
 		fflush(stdin);
@@ -796,19 +891,30 @@ void SuaSV(DSSINHVIEN &listSV){
 		cout << "*Khong duoc chua khoang trang va do dai khong qua 15 ki tu!" << endl;
 		goto lop;
 	}
+	
 	while(1){
-		system("cls");
-		XuatSV(listSV,sinhVien.MALOP);
-	// msv
+	system("cls");
+	XuatSVTheoDK(listSV,sinhVien.MALOP);
+	// msv can sua
+	maSV_test:
+	char maSV[12];
+	cout << "MSV: ";
+	fflush(stdin);
+	gets(maSV);
+	InHoa(maSV);
+	if(strlen(maSV) == 0) return;
+	if (KiemTraSV(listSV,maSV) == NULL){
+			cout << "ERROR: Ma sinh vien khong ton tai";
+			goto maSV_test;
+	}
 		maSV:
-		char maSV[12];
-		cout << "MSV: ";
+		cout << "===Sua Thong Tin===" << endl <<"MSV: ";
 		fflush(stdin);
 		gets(sinhVien.MASV);
 		InHoa(sinhVien.MASV);
 		if(strlen(sinhVien.MASV) == 0) return;
-		if (KiemTraSV(listSV,sinhVien.MASV) == NULL){
-			cout << "ERROR: Ma sinh vien khong ton tai";
+		if (KiemTraSV(listSV,sinhVien.MASV) == 0){
+			cout << "ERROR: Ma sinh vien da ton tai" << endl;
 			goto maSV;
 		}
 		// ho
@@ -839,11 +945,13 @@ void SuaSV(DSSINHVIEN &listSV){
 		}
 		// phai
 		phai:
-		cout << "Phai (NAM/Nu):";
+		cout << "Phai (NAM/NU):";
+		fflush(stdin);
 		gets(sinhVien.PHAI);
 		InHoa(sinhVien.PHAI);
+		cout << sinhVien.PHAI;
 		if(strlen(sinhVien.PHAI) == 0 ) return;
-		if ( strcmp(sinhVien.PHAI,"NAM") !=0 ||strcmp(sinhVien.PHAI,"NU") !=0){
+		if ( strcmp(sinhVien.PHAI,"NAM") !=0 && strcmp(sinhVien.PHAI,"NU") !=0){
 			cout << "ERROR: Sai cu phap!!!" << endl;
 			goto phai;
 		}
@@ -866,12 +974,12 @@ void SuaSV(DSSINHVIEN &listSV){
 		cout << "Nam nhap hoc: ";
 		gets(number);
 		if(strlen(number) == 0 ) return;
-		if(KiemTraSo(number) == 0 || atoi(number) > 2014 || KiemTraKhoangTrang(number) == 0 || strlen(number) > 4){
-			cout << "*Nam khong dung, moi nhap lai: " << endl;
+		if(KiemTraSo(number) == 0 || atoi(number) < 2014 || KiemTraKhoangTrang(number) == 0 || strlen(number) > 4){
+			cout << "ERROR: Nam khong dung, moi nhap lai: " << endl;
 			goto number;
 		}
 		sinhVien.NAM = atoi(number);	
-		SuaNodeSV(listSV,&sinhVien);
+		SuaNodeSV(listSV,&sinhVien,maSV);
 }
 }
 // e
@@ -879,16 +987,16 @@ void ThemMH(DSMONHOC &listMH, MONHOC *monHoc){
 	listMH.monhoc[listMH.soluong] = new MONHOC();
 	listMH.monhoc[listMH.soluong] = monHoc;
 	listMH.soluong++;
-}
-void XoaMH(DSMONHOC &listMH, char maMH[]){
-	for(int i=0; i < listMH.soluong; i++){
+} 
+void XoaMH(DSMONHOC &l, char maMH[]){   
+	for(int i=0; i < l.soluong; i++){ 		
+		if ( strcmp(l.monhoc[i]->MAMH, maMH) == 0){
+			delete l.monhoc[i];
 		
-		if ( strcmp(listMH.monhoc[i]->MAMH, maMH) == 0){
-			delete listMH.monhoc[i];
-			for(i; i< listMH.soluong;i++){
-				listMH.monhoc[i] = listMH.monhoc[i+1];
-			}
-			listMH.soluong--;
+			for(i; i< l.soluong;i++){
+				l.monhoc[i] = l.monhoc[i+1];
+			}	
+			l.soluong--;
 			return;
 		}
 	}
@@ -896,7 +1004,7 @@ void XoaMH(DSMONHOC &listMH, char maMH[]){
 void SuaMH(DSMONHOC &listMH, MONHOC *monHoc){
 	for(int i=0; i< listMH.soluong; i++){
 		if (strcmp(listMH.monhoc[i]->MAMH,monHoc->MAMH) == 0){
-			listMH.monhoc[1] = monHoc;
+			listMH.monhoc[i] = monHoc;
 			return;
 		}
 	}
@@ -922,8 +1030,7 @@ void MenuLTC(DSLOP &root,DSMONHOC &listMH){
 			XuatLTC(root);
 			case 1:{		
 				case_1:
-				char nienkhoa[50];
-				int hocKy;
+				char nienkhoa[50],hocKy[50];
 				cout << "--THEM LOP TIN CHI--" << endl;
 				cout << "Nien Khoa: ";
 				fflush(stdin);
@@ -936,10 +1043,9 @@ void MenuLTC(DSLOP &root,DSMONHOC &listMH){
 				}
 				cout << "Hoc Ky: ";
 				fflush(stdin);
-				cin >> hocKy;
-				if(hocKy== 0) break;
-				ThemLTC(root,listMH,nienkhoa,hocKy);
-				LuuLTC(root);
+				gets(hocKy);
+				if(strlen(hocKy)== 0) break;
+				ThemLTC(root,listMH,nienkhoa,atoi(hocKy));
 				break;
 			}
 			case 2:{
@@ -967,25 +1073,27 @@ void MenuLTC(DSLOP &root,DSMONHOC &listMH){
 	}
 }
 //g
-void DangKyTC(LOP &lop,SINHVIEN sv){
-	SINHVIENDK *data;
-	data->DIEM = -1;
-	strcpy(data->MASV,sv.MASV);
-	SINHVIENDK *i = lop.dssv->pFirst;
+void DangKyTC(DSDANGKY *dsdk,char maSV[],float diem){
+	SINHVIENDK *data = new SINHVIENDK;
+	strcpy(data->MASV,maSV);
+	data->DIEM = diem;
+	SINHVIENDK *i = dsdk->pFirst;
 	SINHVIENDK *t;
-	for(i; i!=NULL && strcmp(i->MASV,data->MASV) < 0;t=i, i=i->next);
-	
-	if (i == NULL){
-		lop.dssv->pFirst = data;
-		lop.dssv->pLast = data;
-	} else if (i == lop.dssv->pFirst){
-		data->next = lop.dssv->pFirst;
-		lop.dssv->pFirst = data;
+	dsdk->soluong++;
+	if (dsdk->pFirst == NULL){
+		dsdk->pFirst = data;
+		dsdk->pLast = data;
+		return;
 	}
-	else if (i == lop.dssv->pLast){
-		lop.dssv->pLast->next = data;
-		lop.dssv->pLast = data;
-	} else {
+	for(i  ; i!=NULL && strcmp(i->MASV,data->MASV) < 0;t=i, i=i->next);
+	if (i == NULL){
+		dsdk->pLast->next = data;
+		dsdk->pLast = data;
+	} else if (i == dsdk->pFirst){
+		data->next = dsdk->pFirst;
+		dsdk->pFirst = data;
+	}
+	 else {
 		data->next = t->next;
 		t->next = data;
 	}
@@ -1058,26 +1166,40 @@ void DocSV(DSSINHVIEN &listSV){
 	}
 	docFile.close();
 }
-void LuuSVDK(DSDANGKY *listDK,LOP lop){
+void LuuSVDK(LOP lop){
 	ofstream luu;
-	char fileName[strlen(toChar(lop.MALOPTC))] ;
-	strcpy(fileName,toChar(lop.MALOPTC));
+	char fileName[1000] ;
+	fileName,sprintf(fileName,"%d", lop.MALOPTC);
 	strcat(fileName,".txt");
 	luu.open(fileName, ios::out);
-	for(SINHVIENDK *i = listDK->pFirst; i!= NULL; i=i->next){
+	luu << lop.dssv->soluong << endl;
+	for(SINHVIENDK *i = lop.dssv->pFirst; i!= NULL; i=i->next){
 		luu << i->MASV << endl;
 		luu << i->DIEM << endl;
 	}
 	luu.close();
 }
-void DocSVDK(DSDANGKY *listDK,LOP lop){
+void DocSVDK(LOP lop,DSDANGKY *dsdk){
 	ifstream doc;
-	
+	char fileName[1000];
+	fileName,sprintf(fileName,"%d", lop.MALOPTC);
+	strcat(fileName,".txt");
+	doc.open(fileName, ios::in);
+	char maSV[12];
+	float diem;
+	int n;
+	doc >> n;
+	if(doc.fail()) return;
+	for(int i=1; i<=n; i++){
+		SINHVIENDK temp;
+		doc >> temp.MASV;
+		doc >> temp.DIEM;
+		DangKyTC(dsdk,temp.MASV,temp.DIEM);
+	}
 	doc.close();
 }
 
 void tempLuuLTC(ofstream &luuFile, DSLOP root){	 
-
 	 if(root != NULL)    
 	   {
 	      tempLuuLTC(luuFile,root->left);
@@ -1112,7 +1234,9 @@ void DocLTC(DSLOP &root){
 	 	 docFile >>  tempLOP->NIENKHOA ;
 	   	 docFile >>  tempLOP->MAX ;
 	     docFile >>  tempLOP->MIN;
+	     tempLOP->dssv = new DSDANGKY;
 	     Create_AVLTree(root,*tempLOP);
+	     DocSVDK(*tempLOP,tempLOP->dssv);
 	}  while(!docFile.eof());
 	docFile.close();
 }
@@ -1127,11 +1251,8 @@ void MenuMH(DSMONHOC &listMH){
 		cout << "2. Xoa Mon Hoc" << endl;
 		cout << "3. Sua Mon Hoc" << endl;
 		cout << "LuaChon (1/2/3): ";
-		gotoxy(0,6);
-		gotoxy(18,11);
 		fflush(stdin);
 		gets(chon);	
-		gotoxy(0,7);
 		
 		switch(atoi(chon)){
 			case 1:{
@@ -1144,38 +1265,54 @@ void MenuMH(DSMONHOC &listMH){
 				fflush(stdin);
 				gets(tempMH->MAMH);
 				InHoa(tempMH->MAMH);
-				if(strlen(tempMH->MAMH) == 0) break;
+				
+				if(strlen(tempMH->MAMH) == 0) break;	
 				if( KiemTraKhoangTrang(tempMH->MAMH) == 0 ){
-					cout << "*Khong Chua Khong Trang!!" << endl;
+					cout << "ERROR: Khong Chua Khong Trang!!" << endl;
 					goto mmh_case1;
 				}
 				
-				if( KiemTraKiTu(tempMH->MAMH) == 0 || strlen(tempMH->MAMH) == 0 || strlen(tempMH->MAMH) >10 || KiemTraKhoangTrang(tempMH->MAMH) == 0 ){
-					cout << "*Sai Cu Phap! Moi Nhap Lai" << endl;
+				if( KiemTraKiTu(tempMH->MAMH) == 0 || strlen(tempMH->MAMH) >10 ){
+					cout << "ERROR: Sai Cu Phap! Moi Nhap Lai" << endl;
 					goto mmh_case1;
 				}
-		
-				if( KiemTraMH(listMH,tempMH->MAMH) !=NULL ){
-					cout << "Ma Mon Hoc Bi Trung" << endl;
+				
+				if(KiemTraMH(listMH,tempMH->MAMH) !=NULL ){
+					cout << "ERROR: Ma Mon Hoc Bi Trung" << endl;
 					goto mmh_case1;	
 				}
+				
 				mon:
 				cout << "Ten Mon: ";
 				fflush(stdin);
 				gets(tempMH->TENMH);
 				InHoa(tempMH->TENMH);
-				// chuyen string thanh char* de kiem tra dieu kien
+			
 				if(strlen(tempMH->TENMH) == 0) break;
 				if( KiemTraKiTu(tempMH->TENMH) == 0 || strlen(tempMH->TENMH) == 0){
-					cout << "Sai Cu Phap! Moi Nhap Lai" << endl;
+					cout << "ERROR: Sai Cu Phap! Moi Nhap Lai" << endl;
 					goto mon;
 				}
+				char stclt[5],stcth[5];
+				stclt_case1:
 				cout << "So Tin Chi Li Thuyet: ";
-				cin >> tempMH->STCLT;
-				if(tempMH->STCLT == 0) break;
+				gets(stclt);
+				if(strlen(stclt) == 0) break;
+				if(KiemTraSo(stclt) == 0) {
+					cout << "ERROR: Sai Cu Phap!!";
+					goto stclt_case1;
+				}
+				tempMH->STCLT = atoi(stclt);
+				stcth_case1:
 				cout << "So Tin Chi Thuc Hanh: ";
-				cin >> tempMH->STCTH;
-				if(tempMH->STCTH == 0) break;
+				gets(stcth);
+				if(strlen(stcth) == 0) break;
+				if(KiemTraSo(stcth) == 0) {
+					cout << "ERROR: Sai Cu Phap!!";
+					goto stcth_case1;
+				}
+				tempMH->STCTH = atoi(stcth);
+				
 				ThemMH(listMH,tempMH);
 				LuuMH(listMH);
 				break;
@@ -1192,11 +1329,11 @@ void MenuMH(DSMONHOC &listMH){
 				InHoa(maMH);
 				if(strlen(maMH) == 0) break;
 				if( KiemTraKiTu(maMH) == 0 || strlen(maMH) == 0 || strlen(maMH) >10){
-					cout << "*Sai cu phap! Moi nhap lai" << endl;
+					cout << "ERROR: Sai cu phap! Moi nhap lai" << endl;
 					goto mmh_case2;	
 				}
 				if (KiemTraMH(listMH,maMH) == NULL){
-					cout << "*Ma mon hoc khong ton tai!" << endl; 
+					cout << "ERROR: Ma mon hoc khong ton tai!" << endl; 
 					Sleep(1000);
 					break;
 				}
@@ -1211,7 +1348,7 @@ void MenuMH(DSMONHOC &listMH){
 				XuatMH(listMH);
 				char maMH[50],tenMH[300], stclt[50],stcth[50];
 				//object hoc can sua
-				MONHOC *monHoc;
+				MONHOC *monHoc = new MONHOC;
 				mmh_case3:
 				cout<< "--Sua MON HOC--" << endl;
 				cout << "Ma Mon Hoc: ";
@@ -1220,11 +1357,12 @@ void MenuMH(DSMONHOC &listMH){
 				InHoa(maMH);
 				if(strlen(maMH) == 0) break;
 				if( KiemTraMH(listMH,maMH) == NULL ){
-					cout << "Ma Mon Hoc Khong Ton Tai!!!";
+					cout << "ERROR: Ma Mon Hoc Khong Ton Tai!!!";
 					break;	
 				}
-				// lay mon hoc can sua
-				monHoc = KiemTraMH(listMH,maMH);
+				// lay mon hoc can sua ///
+				*monHoc = *KiemTraMH(listMH,maMH);
+				
 				cout << "Thong Tin Sua" << endl;
 				mon_case3:
 				cout << "Ten Mon: ";
@@ -1232,23 +1370,23 @@ void MenuMH(DSMONHOC &listMH){
 				gets(tenMH);
 				InHoa(tenMH);
 				if(strlen(tenMH) == 0) {
-					// khong lam gi, giu nguyen gia tri cu
+					break;
 				} else {
 					if( KiemTraKiTu(tenMH) == 0 || strlen(tenMH) == 0){
-						cout << "Sai Cu Phap! Moi Nhap Lai" << endl;
+						cout << "ERROR: Sai Cu Phap! Moi Nhap Lai" << endl;
 						goto mon_case3;
 					}
 					strcpy(monHoc->TENMH,tenMH);
 				}
-				stclt:
+				stclt: 
 				cout << "So Tin Chi Li Thuyet: ";
 				fflush(stdin);
 				gets(stclt);
 				if(strlen(stclt) == 0) {
-					// giu nguyen gia tri cu
+					break;
 				} else{
 					if(KiemTraSo(stclt) == 0){
-						cout <<"*Sai Cu Phap!Nhap lai...";
+						cout <<"ERROR: Sai Cu Phap!Nhap lai...";
 						goto stclt;
 					}
 					monHoc->STCLT = atoi(stclt);
@@ -1258,15 +1396,15 @@ void MenuMH(DSMONHOC &listMH){
 				fflush(stdin);
 				gets(stcth);		
 				if(strlen(stcth) == 0) {
-					// giu nguyen gia tri cu
+					break;
 				} else{
 					if(KiemTraSo(stcth) == 0){
-						cout <<"*Sai Cu Phap!Nhap lai...";
+						cout <<"ERROR: Sai Cu Phap!Nhap lai...";
 						goto stcth;
 					}
 					monHoc->STCTH = atoi(stcth);
 				}
-			//	SuaMH(listMH,tempMH);
+				SuaMH(listMH,monHoc);
 				LuuMH(listMH);
 				break;
 			}
@@ -1281,7 +1419,7 @@ void MenuSV(DSSINHVIEN &listSV){
 	while(1){
 	char chon[10];
 	system("cls");
-
+	XuatSV(listSV);
 	cout << "Cap Nhat Danh Sach Sinh Vien: " << endl;
 	cout << "1. Them Sinh Vien" << endl;
 	cout << "2. Xoa Sinh Vien" << endl;
@@ -1319,7 +1457,7 @@ void MenuSV(DSSINHVIEN &listSV){
 			cout << "Nhap MA Sinh Vien Can Xoa: ";
 			gets(maSV);
 			InHoa(maSV);
-			if(KiemTraSV(listSV,maSV) == 0){
+			if(KiemTraSV(listSV,maSV) == NULL){
 				cout << "ERROR: Ma sinh vien khong ton tai!" << endl;
 				Sleep(1000);
 				break;
@@ -1339,24 +1477,222 @@ void MenuSV(DSSINHVIEN &listSV){
 	}
 	}
 }
+//g
+void MenuDangKyLTC(DSLOP &root,DSSINHVIEN &listSV){
+	DSMONHOC tempListMH;
+	int check = 0,i=0;
+	char mltc[50];
+	
+	system("cls");
+	XuatLTC(root);
+	char nienKhoa[50],hocKy[50],msv[12];
+	msv:
+	cout << "Nhap Ma Sinh Vien: ";
+	fflush(stdin);
+		gets(msv);
+	InHoa(msv);
+	if(strlen(msv) == 0) return;
+	if(KiemTraSV(listSV,msv) == NULL){
+		cout << "ERROR: Sinh vien khong ton tai" << endl;
+		goto msv;
+	}
+	cout << "Nien Khoa: ";
+	fflush(stdin);
+	gets(nienKhoa);
+	InHoa(nienKhoa);
+	if(strlen(nienKhoa) == 0) return;
+	cout << "Hoc Ky: ";
+	fflush(stdin);
+	gets(hocKy);
+	system("cls");
+	//check xem co lop tai nien khoa va hoc ky do khong
+	XuatLTCTheoDK(root,nienKhoa,atoi(hocKy),check);
+	while (check == 1){
+		mmh:
+		char chon[5]="";
+		int maLTC[50];
+		system("cls");
+		XuatLTCTheoDK(root,nienKhoa,atoi(hocKy),check);
+		XuatMH(tempListMH);
+		cout << "Luachon(1: Chon/2: Huy/3: Luu): ";
+		fflush(stdin);
+		gets(chon);
+		InHoa(chon);
+		if(strlen(chon) == 0) break;
+		while(atoi(chon) == 1){
+			system("cls");	
+			XuatLTCTheoDK(root,nienKhoa,atoi(hocKy),check); cout<< endl;
+			XuatMH(tempListMH);
+			cout << "MLTC: ";
+			fflush(stdin);
+			gets(mltc);
+			if(strlen(mltc) == 0) break;
+			if(KiemTraMLTC(root,atoi(mltc)) == NULL){
+				system("cls");
+				cout << "ERROR: Ma LTC khong ton tai" << endl;
+				Sleep(1000);
+				continue;
+			}
+			if(KiemTraMH(tempListMH,KiemTraMLTC(root,atoi(mltc))->lop.MAMH) != NULL){
+				system("cls");
+				cout << "ERROR: Ma mon hoc da ton tai" << endl;
+				Sleep(1000);
+				continue;
+			}
+			if(KiemTraDaDangKyLTC(KiemTraMLTC(root,atoi(mltc))->lop.dssv,msv) == 0){
+				system("cls");
+				cout << "ERROR: Ma mon hoc da duoc dang ky" << endl;
+				Sleep(1000);
+				continue;
+			}
+			MONHOC *tempMH = new MONHOC;
+			*tempMH = *KiemTraMH(listMH,KiemTraMLTC(root,atoi(mltc))->lop.MAMH);
+			// show mon hoc chon
+			ThemMH(tempListMH,tempMH);
+			// luu ma ltc da chon
+			maLTC[i] = atoi(mltc);
+			i++;
+		}
+		//delete 
+		if(atoi(chon) == 2){
+			system("cls");	
+			XuatLTCTheoDK(root,nienKhoa,atoi(hocKy),check); cout<< endl;
+			XuatMH(tempListMH);
+			cout << "MLTC (Can Huy): ";
+			fflush(stdin);
+			gets(mltc);
+			if(strlen(mltc) == 0) break;
+			for(int j=0;j<i; j++){
+				if(atoi(mltc) == maLTC[j]){
+					XoaMH(tempListMH,KiemTraMLTC(root,atoi(mltc))->lop.MAMH);
+					for(int k=j; k<i-1; k++){
+						maLTC[k] = maLTC[k+1];
+					}
+					i--;
+					break;
+				}
+			}
+		}
+		// save
+		if(atoi(chon) == 3){
+			for(int j=0; j<i; j++){
+				DangKyTC(KiemTraMLTC(root,maLTC[j])->lop.dssv, msv,-1);
+				LuuSVDK(KiemTraMLTC(root,maLTC[j])->lop);
+			}
+			break;
+		}
+	}
+}
+//h
+void NhapDiem(DSLOP root){
+	char mmh[10], nienKhoa[50];
+	char hocKy[10],nhom[10],diem[10];
+	LOP *tempLop = NULL;
+	int i=0;
+	SINHVIENDK *k;
+	cout <<"\t\t\tMENU NHAP DIEM" << endl;
+	
+	cout << "Nien Khoa: ";
+	fflush(stdin);
+	gets(nienKhoa);
+	InHoa(nienKhoa);
+	if(strlen(nienKhoa) == 0) return;
+	
+	cout << "Hoc Ky: ";
+	fflush(stdin);
+	gets(hocKy);
+	InHoa(hocKy);
+	if(strlen(hocKy) == 0) return;
+	
+	cout << "Nhom: ";
+	fflush(stdin);
+	gets(nhom);
+	InHoa(nhom);
+	if(strlen(nhom) == 0) return;
+	
+	cout << "Ma Mon Hoc: ";
+	fflush(stdin);
+	gets(mmh);
+	InHoa(mmh);
+	if(strlen(mmh) == 0) return;	
+	// tim kiem trong danh sach lop tc lay ra danh sach sv trung khop voi dieu kien tren
+	KiemTraLop(root,tempLop,mmh,nienKhoa,atoi(hocKy),atoi(nhom));
+	k = tempLop->dssv->pFirst;
+	XuatSVDK(*tempLop);
+	while(i!= tempLop->dssv->soluong && k!=NULL){
+		gotoxy(60,3+i);
+		cout << ": ";
+		fflush(stdin);
+		gets(diem);
+		if(strlen(diem) == 0 || KiemTraSo(diem) == 0) return;
+		k->DIEM = atoi(diem);
+		k=k->next;
+	}
+	LuuSVDK(*tempLop);
+	
+	cin >> tempLop->MAMH;
+}
+void MenuQuanLyThongTin(){
+		char chon[10];
+		system("cls");
+		while(1){
+			strcpy(chon,"-1");
+			cout << "\t\t\t\t\t\tMENU QUAN LY THONG TIN" << endl;
+			cout << "\t\t\t\t\t1. In Danh Sach Sinh Vien Theo Lop Tin Chi"<<endl;
+			cout << "\t\t\t\t\t2. In Danh Sach Sinh Vien Theo Lop" << endl;
+			cout << "\t\t\t\t\t3. In Bang Diem Theo Lop Tin Chi" << endl;
+			cout << "\t\t\t\t\t4. In Danh Danh Sach Mon Hoc" << endl;
+			cout << "\t\t\t\t\t5. In Bang Diem Trung Binh Cua Mot Lop Theo Tin Chi" << endl;
+			cout << "----------------------------------------------------------------------------------------------------" << endl;
+			cout << "Lua chon: ";
+			gets(chon);
+			switch(atoi(chon)){
+				case 1:{
+					InDanhSachSVCuaLTC();
+					break;
+				}
+				case 2:{
+					char maLop[10];
+					cout << "Nhap Map Lop: ";
+					fflush(stdin);
+					gets(maLop);
+					InHoa(maLop);
+					XuatSVTheoDK(listSV,maLop);
+					gets(maLop);
+					break;
+				}
+				case 3:{
+					
+					break;
+				}
+				case 4:{
+					
+					break;
+				}
+			}
+		
+			if(atoi(chon) == 0) break;
+		}
+}
 void MainMenu(DSSINHVIEN &listSV,DSMONHOC &listMH, DSLOP &root){
 	char luachon[2];	
 	while(1){	
 		system("cls");
 		strcpy(luachon,"-1");
 		cout << "\t\t\t\tMENU QUAN LY DIEM SINH VIEN THEO HE TIN CHI" << endl;
-		cout << "\t\t\t\t\t1. DANG KY LOP TIN CHI"<<endl;
+		cout << "\t\t\t\t\t1. Dang Ky Lop Tin Chi"<<endl;
 		cout << "\t\t\t\t\t2. Nhap Diem" << endl;
 		cout << "\t\t\t\t\t3. Quan Ly Mon Hoc" << endl;
 		cout << "\t\t\t\t\t4. Quan Ly Sinh Vien" << endl;
 		cout << "\t\t\t\t\t5. Quan Ly Lop Tin Chi" << endl;
-		cout << "\t\t\t\t\t6. Quan Ly Diem" << endl;
+		cout << "\t\t\t\t\t6. Quan Ly Thong Tin" << endl;
 		cout << "\t\t\t\t\t0. Thoat" << endl;
 		cout << "----------------------------------------------------------------------------------------------------" << endl;
 		cout << "Luachon: ";
 		gets(luachon);
 		switch (atoi(luachon)){
 			case 1:{
+				MenuDangKyLTC(root,listSV);
 				break;
 			}
 			case 2:{
@@ -1376,7 +1712,7 @@ void MainMenu(DSSINHVIEN &listSV,DSMONHOC &listMH, DSLOP &root){
 				break;
 			}
 			case 6:{
-				
+				MenuQuanLyThongTin();
 				break;
 			}
 		}
@@ -1385,15 +1721,24 @@ void MainMenu(DSSINHVIEN &listSV,DSMONHOC &listMH, DSLOP &root){
 }
 // Xuat
 void XuatMH(DSMONHOC listMH){
-	cout << "\t\t\t\t\t\t\t\t\tDANH SACH MON HOC" << endl;
+	cout << "\t\t\t\t\t\tDANH SACH MON HOC" << endl;
 	cout << right << setw(15) << "MMH" << "|";
-	cout << right << setw(80) << "TEN"<< "|";
+	cout << right << setw(40) << "TEN"<< "|";
 	cout << right << setw(20) << "LT"<< "|";
 	cout << right << setw(20) << "TH"<< "|";
-	cout << endl <<"------------------------------------------------------------------------------------------------------------------------------------------------------------" << endl;
+	cout << endl <<"---------------------------------------------------------------------------------------------------" << endl;
+	// sort mon hoc
+	for(int i=0; i<listMH.soluong-1; i++){
+		for(int j=i+1;j<listMH.soluong; j++ ){
+			if(strcmp(listMH.monhoc[i]->TENMH,listMH.monhoc[j]->TENMH) > 0 ){
+				swap(listMH.monhoc[i],listMH.monhoc[j]);
+			}
+		}
+	}
+	
 	for (int i=0; i<listMH.soluong; i++){
-		cout << right << setw(15) <<listMH.monhoc[i]->MAMH << "|";
-		cout << right << setw(80) << listMH.monhoc[i]->TENMH << "|";
+		cout << right << setw(15) << listMH.monhoc[i]->MAMH << "|";
+		cout << right << setw(40) << listMH.monhoc[i]->TENMH << "|";
 		cout << right << setw(20) << listMH.monhoc[i]->STCLT<< "|";
 		cout << right << setw(20) << listMH.monhoc[i]->STCTH << "|"<< endl;
 	}
@@ -1410,8 +1755,18 @@ void XuatLTC(DSLOP root){
 	cout << endl <<"    ----------------------------------------------------------------------------------------------" << endl;
 	Posorder(root);
 }
-void XuatSV(DSSINHVIEN listSV, char maLop[]){
-	cout << "\t\t\t\t\tDANH SACH SINH VIEN - " << maLop<< endl;
+void XuatLTCTheoDK(DSLOP root, char nienKhoa[],int hocKy,int &check){
+	cout << "\t\t\t\t\tDANH SACH MON HOC-HOC KY: " << hocKy << "-NIEN KHOA: " << nienKhoa << endl;
+	cout << right << setw(15) << "MLTC" << "|";
+	cout << right << setw(15) << "MMH" << "|";
+	cout << right << setw(40) << "TEN"<< "|";
+	cout << right << setw(20) << "LT"<< "|";
+	cout << right << setw(20) << "TH"<< "|";
+	cout << endl <<"-----------------------------------------------------------------------------------------------------------" << endl;
+	DuyetTheoDK(root,nienKhoa,hocKy,check);
+}
+void XuatSV(DSSINHVIEN listSV){
+	cout << "\t\t\t\t\tDANH SACH SINH VIEN - " << endl;
 	cout << right << setw(13) << "MA LOP" << "|";
 	cout << right << setw(9) << "MA SV" << "|";
 	cout << right << setw(14) << "HO" << "|";
@@ -1420,6 +1775,28 @@ void XuatSV(DSSINHVIEN listSV, char maLop[]){
 	cout << right << setw(11) << "SDT" << "|";
 	cout << right << setw(12) << "Nam" << "|";
 	cout << endl <<"    ----------------------------------------------------------------------------------------------" << endl;
+	if(listSV.pLast == NULL) return;
+	for(SINHVIEN *i = listSV.pFirst; i!=NULL; i=i->next){
+		cout << right << setw(13) <<  i->MALOP << "|";
+		cout << right << setw(9)  <<    i->MASV << "|";
+		cout << right << setw(14) <<  i->HO << "|";
+		cout << right << setw(15) <<  i->TEN << "|";
+		cout << right << setw(16) <<  i->PHAI << "|";
+		cout << right << setw(11) <<  i->SDT << "|";
+		cout << right << setw(12) <<  i->NAM << "|";
+		cout << endl <<"    ----------------------------------------------------------------------------------------------" << endl;
+	}
+}
+void XuatSVTheoDK(DSSINHVIEN listSV, char maLop[]){
+	cout << "\t\t\t\t\tDANH SACH SINH VIEN - " << maLop<< endl;
+	cout << right << setw(13) << "MA LOP" << "|";
+	cout << right << setw(9) << "MA SV" << "|";
+	cout << right << setw(14) << "HO" << "|";
+	cout << right << setw(15) << "TEN" << "|";
+	cout << right << setw(16) << "PHAI" << "|";
+	cout << right << setw(11) << "SDT" << "|";
+	cout << right << setw(12) << "Nam" << "|";
+	cout << endl <<"----------------------------------------------------------------------------------------------" << endl;
 	if(listSV.pLast == NULL) return;
 	if(strcmp(listSV.pLast->MALOP,maLop) < 0 ) return;
 	int check = 0;
@@ -1437,15 +1814,28 @@ void XuatSV(DSSINHVIEN listSV, char maLop[]){
 		cout << endl <<"    ----------------------------------------------------------------------------------------------" << endl;
 	}
 }
+void XuatSVDK(LOP lop){
+	system("cls");
+	cout << "\t\tDANH SACH SINH VIEN - MTC: " << lop.MALOPTC << endl;
+	cout << right<<setw(5)<< "STT|" << right<<setw(15)<< "MASV|" << right<<setw(15)<< "HO|" <<right<<setw(13)<< "TEN|" <<right<<setw(10)<< "DIEM|" << endl;
+	cout <<"-----------------------------------------------------------" << endl;
+	int i=1;	
+	char showScore;
+	for(SINHVIENDK *k=lop.dssv->pFirst; k!=NULL; k=k->next){
+		if(k->DIEM == -1) showScore = ' '; else showScore = (char) k->DIEM + '0';
+		cout << right<<setw(3)<< i <<"|" << right<<setw(15)<< k->MASV <<"|" 
+			<< right<<setw(13)<< KiemTraSV(listSV,k->MASV)->HO<<"|" <<right<<setw(13)<<KiemTraSV(listSV,k->MASV)->TEN
+			<<"|" <<right<<setw(9)<< k->DIEM << "|" << endl;
+			i++;	
+	}
+}
 int main(int argc, char *argv[])
-{
-	DSLOP root = NULL;
-	DSSINHVIEN listSV;
-	DSMONHOC listMH;
+{	
 	DocMH(listMH);
 	DocLTC(root);
 	DocSV(listSV);
 	//menu
 	MainMenu(listSV,listMH,root);
+
 	return 0;
 }
