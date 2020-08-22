@@ -38,12 +38,14 @@ typedef struct{
 
 typedef struct {
 	// khong trung
+	// data
 	int MALOPTC;
 	char MAMH[10];
 	char NIENKHOA[50];
 	int HOCKY;
 	int NHOM;
 	int MAX,MIN;
+	// danh sach dang ky
 	DSDANGKY *dssv;
 }LOP;
 // node
@@ -71,6 +73,7 @@ struct DSSINHVIEN{
 // cay nhi phan tim kiem
 struct dslop{
 	int key;
+	// chi so can bang
 	int bf;
 	// data
 	LOP lop;
@@ -89,6 +92,7 @@ DSLOP Rotate_Right(DSLOP ya);
 void LeftBalance(DSLOP &P);
 void RightBalance(DSLOP &P);
 DSLOP search(DSLOP,int);
+void InHoa(char ch[]);
 // file
 void LuuLTC(DSLOP);
 void LuuSV(DSSINHVIEN listSV);
@@ -164,8 +168,13 @@ void XoaKhoangTrangThua(char *ch){
             }
         }
 }
-int confirm(char *ch){
+int confirm(){
+	char ch[2];
+	fflush(stdin);
 	cout << "Ban Co Chac Chan (Y/N): ";
+	gets(ch);
+	InHoa(ch);
+	
 	if(strcmp(ch,"Y") == 0) return 1;
 	return 0;
 }
@@ -294,6 +303,7 @@ void Create_AVLTree(DSLOP &root,LOP lop){
   	XoaKhoangTrangThua(lop.NIENKHOA);
 	if (root==NULL)
 	{ 
+		// khoi tao gia tri dau tien
 		p = new dslop();
 		p->key = lop.MALOPTC;	p->lop = lop;   p->bf   = 0 ;   
 		p->left = NULL;   p->right = NULL;
@@ -419,21 +429,21 @@ DSLOP Rotate_Left(DSLOP root)
       }
    return p;
 }
-DSLOP Rotate_Right(DSLOP ya)
+DSLOP Rotate_Right(DSLOP root)
 {
-   DSLOP s;
-  if(ya == NULL)
+   DSLOP p;
+  if(root == NULL)
       printf("Khong the xoay phai vi cay bi rong.");
    else
-      if(ya->left == NULL)
+      if(root->left == NULL)
 	      printf("Khong the xoay phai vi khong co nut con ben trai.");
       else
       {
-	      s = ya->left;
-	      ya->left = s->right;
-	      s->right = ya;
+	      p = root->left;
+	      root->left = p->right;
+	      p->right = root;
       }
-   return s;
+   return p;
 } 
 void Left_Balance(DSLOP &P)
 {
@@ -465,31 +475,31 @@ void Left_Balance(DSLOP &P)
 }
 void Right_Balance(DSLOP &P)
 {
-switch(P->right->bf){
-	case 1: //Ghi chú: cho bi?t dây là tru?ng h?p m?t cân b?ng nào?
-		Rotate_Right(P->right);
-		Rotate_Left(P);
-		switch(P->bf){
-			case 0:
-			P->left->bf= 0;
-			P->right->bf= 0;
-			break;
-			case 1:
-			P->left->bf= 1;
-			P->right->bf= 0;
-			break;
-			case 2:
-			P->left->bf= 0;
-			P->right->bf= 2;
-			break;
-		} P->bf = 0;
-	break;
-	case 2: //Ghi chú: cho bi?t dây là tru?ng h?p m?t cân b?ng nào?Tài li?u hu?ng d?n th?c hành môn C?u trúc d? li?u và gi?i thu?t
-		Rotate_Left(P);
-		P->bf = 0;
-		P->left->bf = 0;
-	break;
-}
+	switch(P->right->bf){
+		case 1: //Ghi chú: cho bi?t dây là tru?ng h?p m?t cân b?ng nào?
+			Rotate_Right(P->right);
+			Rotate_Left(P);
+			switch(P->bf){
+				case 0:
+				P->left->bf= 0;
+				P->right->bf= 0;
+				break;
+				case 1:
+				P->left->bf= 1;
+				P->right->bf= 0;
+				break;
+				case 2:
+				P->left->bf= 0;
+				P->right->bf= 2;
+				break;
+			} P->bf = 0;
+		break;
+		case 2: //Ghi chú: cho bi?t dây là tru?ng h?p m?t cân b?ng nào?Tài li?u hu?ng d?n th?c hành môn C?u trúc d? li?u và gi?i thu?t
+			Rotate_Left(P);
+			P->bf = 0;
+			P->left->bf = 0;
+		break;
+	}
 } 
 DSLOP rp;
 void  remove_case_3 (DSLOP  &r )
@@ -507,22 +517,29 @@ void  remove_case_3 (DSLOP  &r )
 }
 void  xoaLTC(DSLOP &p,int x)
 {
-	if (p == NULL)  printf ("Khong tim thay");
+	if (p == NULL)  cout << "Khong tim thay";
 	else
-	  if (x < p->key)  xoaLTC (p->left,x);
-	  else if (x > p->key)
-		  xoaLTC ( p->right,x);
+	  if (x < p->key)  {
+	  	xoaLTC (p->left,x);
+	  	Left_Balance(p);
+	  }
+	  else if (x > p->key){
+	  		xoaLTC ( p->right,x);
+	  		Right_Balance(p);
+	  }
+		  
 	       else   	// p->key = x
 	       {
-		 rp = p;
+			  rp = p;
               if (rp->right == NULL)  p = rp->left;   
-	// p là nút lá hoac la nut chi co cay con ben trai
-		 else 	if (rp->left == NULL)
+			// p là nút lá hoac la nut chi co cay con ben trai
+			  else 	if (rp->left == NULL)
 			   p = rp->right;  // p là nut co cay con ben phai
-			else remove_case_3 (rp->right);
+			  else remove_case_3 (rp->right);
 		 delete rp;
 	       }
 }
+/*
 void RemoveNode(DSLOP &dslop, int key){
 	if (dslop == NULL) return;
 	if (dslop->key > key){
@@ -536,6 +553,7 @@ void RemoveNode(DSLOP &dslop, int key){
 		xoaLTC(dslop,key);
 	}
 }
+*/
 DSLOP search(DSLOP root, int x)
 {
    DSLOP p = NULL;
@@ -1149,7 +1167,8 @@ void MenuLTC(DSLOP &root,DSMONHOC &listMH){
 				cin >> mltc;
 				if(mltc == 0) break;
 				char ch[2];
-				if  (confirm(gets(ch)) == 0) return;
+	
+				if  (confirm() == 0) return;
 				XoaLTC(root,mltc);
 				Sleep(1000);
 				LuuLTC(root);
@@ -1444,7 +1463,7 @@ void MenuMH(DSMONHOC &listMH){
 					break;
 				}
 				char ch[2];
-				if  (confirm(gets(ch)) == 0) return;
+				if  (confirm() == 0) return;
 				XoaMH(listMH,maMH);
 				cout << "Xoa Thanh Cong !!!";
 				Sleep(1000);
@@ -1588,7 +1607,7 @@ void MenuSV(DSSINHVIEN &listSV){
 					Sleep(1000);
 					return;
 				}
-				if (confirm(gets(ch))  == 0 ) return;
+				if (confirm()  == 0 ) return;
 				XoaNodeSV(listSV,maSV);
 				cout << "XOA THANH CONG!!" << endl;
 				Sleep(1000);
