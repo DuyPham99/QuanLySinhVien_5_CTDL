@@ -2060,6 +2060,74 @@ void NhapDiem(DSLOP root){
 	cout << endl << "Nhap (ENTER) de thoat...";
 	gets(mmh);
 }
+// j
+// tinh so tin chi cua lop do
+void getMaxTC(DSLOP root, char maLop[],float &n,int &nam){
+	if(root != NULL){
+		  // tim xem sinh vien thuoc lop can tim co trong list dsdk neu co thi cong tin chi cua cai lop lai
+	   	  for(SINHVIENDK *k=root->lop.dssv->pFirst; k!=NULL; k=k->next){
+	   	  		if( strcmp(KiemTraSV(listSV,k->MASV)->MALOP,maLop) == 0){
+	   	  			n= n + KiemTraMH(listMH,root->lop.MAMH)->STCLT + KiemTraMH(listMH,root->lop.MAMH)->STCTH;
+	   	  			nam = KiemTraSV(listSV,k->MASV)->NAM;
+	   	  			break;
+	   	  		}
+	   	  }
+	      getMaxTC(root->left, maLop, n,nam);
+	      getMaxTC(root->right, maLop, n , nam);
+	   }
+}
+void getDiemSV(DSLOP root, char maSV[], float &diem){
+	if(root != NULL){
+		  // tim xem sinh vien thuoc lop can tim co trong list dsdk neu co thi cong tin chi cua cai lop lai
+	   	  for(SINHVIENDK *k=root->lop.dssv->pFirst; k!=NULL; k=k->next){
+	   	  		if( strcmp(KiemTraSV(listSV,k->MASV)->MASV,maSV) == 0){
+	   	  			diem = diem + (KiemTraMH(listMH,root->lop.MAMH)->STCLT + KiemTraMH(listMH,root->lop.MAMH)->STCTH) * k->DIEM;
+	   	  			break;
+	   	  		}
+	   	  }
+	      getDiemSV(root->left, maSV, diem);
+	      getDiemSV(root->right, maSV, diem);
+	   }
+}
+void XuatDiemTB(DSSINHVIEN listSV, char maLop[], int nam){
+	system("cls");
+	cout << "\t  BANG THONG KE DIEM TRUNG BINH KHOA HOC" << endl;
+	cout << "\t  Lop: " << maLop << "\t  Nam nhap hoc: " << nam << endl;
+	cout << right<<setw(5)<< "STT|" << right<<setw(15)<< "MASV|" << right<<setw(15)<< "HO|" <<right<<setw(13)<< "TEN|" <<right<<setw(10)<< " DIEM TB|" << endl;
+	cout <<"-----------------------------------------------------------" << endl;
+	int i=1;	
+	float solgTC = 0;
+	getMaxTC(root,maLop,solgTC,nam);
+	for(SINHVIEN *k=listSV.pFirst; k!=NULL; k=k->next){
+		if(strcmp(k->MALOP,maLop) == 0){
+			float diemSV = 0;
+			
+			getDiemSV(root,k->MASV,diemSV);
+			
+			cout << right<<setw(4)<< i <<"|" << right<<setw(15)<< k->MASV <<"|" 
+			<< right<<setw(14)<< KiemTraSV(listSV,k->MASV)->HO <<"|" <<right<<setw(13)<<KiemTraSV(listSV,k->MASV)->TEN
+			<<"|" <<right<<setw(9)<< (float) diemSV/solgTC << "|" << endl;
+			i++;
+		}
+	}
+}
+void InBangDiemTrungBinh(){
+	float n=0;
+	char maLop[15];
+	LOP lop;
+	int nam;
+	// nhap maLop
+	cout << "Nhap Ma Lop: ";
+	fflush(stdin);
+	gets(maLop);
+	InHoa(maLop);
+//	getMaxTC(root,maLop,n,nam);
+	
+	XuatDiemTB(listSV,maLop, nam);
+	
+	//XuatSVTheoDK(listSV,maLop);
+	gets(maLop);
+}
 void MenuQuanLyThongTin(){
 		char chon[10];
 		while(1){
@@ -2101,6 +2169,10 @@ void MenuQuanLyThongTin(){
 					system("cls");
 					XuatMH(listMH);
 					gets(key);
+					break;
+				}
+				case 5:{
+					InBangDiemTrungBinh();
 					break;
 				}
 			}
@@ -2258,13 +2330,11 @@ void XuatSVDK(LOP lop,char tenMon[], char nienKhoa[], int hocKy, char nhom[]){
 	cout << right<<setw(5)<< "STT|" << right<<setw(15)<< "MASV|" << right<<setw(15)<< "HO|" <<right<<setw(13)<< "TEN|" <<right<<setw(10)<< "DIEM|" << endl;
 	cout <<"-----------------------------------------------------------" << endl;
 	int i=1;	
-	char showScore;
-	for(SINHVIENDK *k=lop.dssv->pFirst; k!=NULL; k=k->next){
-		if(k->DIEM == -1) showScore = ' '; else showScore = (char) k->DIEM + '0';
-		
+
+	for(SINHVIENDK *k=lop.dssv->pFirst; k!=NULL; k=k->next){	
 		cout << right<<setw(4)<< i <<"|" << right<<setw(15)<< k->MASV <<"|" 
 			<< right<<setw(14)<< KiemTraSV(listSV,k->MASV)->HO <<"|" <<right<<setw(13)<<KiemTraSV(listSV,k->MASV)->TEN
-			<<"|" <<right<<setw(9)<< showScore << "|" << endl;
+			<<"|" <<right<<setw(9)<< k->DIEM  << "|" << endl;
 			i++;	
 	}
 }
