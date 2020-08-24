@@ -1,4 +1,5 @@
-#include <graphics.h> 
+
+#include <windows.h>
 #include <iostream>
 #include <stdio.h>
 #include <conio.h>
@@ -223,6 +224,7 @@ int KiemTraKhoangTrang(char ch[]){
 }
 int KiemTraSo(char so[]){
 	for (int i=0; i< strlen(so); i++){
+		if( (int) so[i] == 46 ) continue;
 		if (so[i] < 48 or so[i]>57) return 0;
 	}
 	return 1;
@@ -647,7 +649,7 @@ int getBalance(DSLOP N)
            height(N->right);  
 }  
   
-DSLOP Create_AVLTree(DSLOP &node, int key,LOP lop)  
+DSLOP Create_AVLTree(DSLOP node, int key,LOP lop)  
 {  
     /* 1. Perform the normal BST rotation */
     if (node == NULL)  
@@ -741,8 +743,7 @@ DSLOP deleteNode(DSLOP root, int key)
     else
     {  
         // node with only one child or no child  
-        if( (root->left == NULL) || 
-            (root->right == NULL) )  
+        if( (root->left == NULL) || (root->right == NULL) )  
         {  
             DSLOP temp = root->left ?  
                          root->left :  
@@ -767,8 +768,9 @@ DSLOP deleteNode(DSLOP root, int key)
   
             // Copy the inorder successor's  
             // data to this node  
-            root->key = temp->key;  
-  
+            root->lop = temp->lop;
+			root->key = temp->key;  
+  			//*root = *temp;
             // Delete the inorder successor  
             root->right = deleteNode(root->right,  
                                      temp->key);  
@@ -837,7 +839,7 @@ void Posorder(DSLOP root)
    if(root != NULL)    
 	   {
 	      Posorder(root->left);
-	      Posorder(root->right);;
+	      Posorder(root->right);
 		  cout << right << setw(9) << root->lop.MALOPTC << "|";
 		  cout << right << setw(14) << root->lop.MAMH << "|";
 	      cout << right << setw(15) << root->lop.HOCKY << "|";
@@ -950,7 +952,7 @@ void XoaLTC(DSLOP &root,int mltc){
 		cout << "Ma lop tin chi khong ton tai!!!";
 		return;
 	}
-	deleteNode(root,mltc);
+	root = deleteNode(root,mltc);
 	cout << "DA XOA THANH CONG 1 LTC!!";
 }
 void SuaLTC(DSLOP &root,DSMONHOC listMH){
@@ -2345,6 +2347,6 @@ int main(int argc, char *argv[])
 	DocSV(listSV);
 	//menu
 	MainMenu(listSV,listMH,root);
-
+//	Posorder(root);
 	return 0;
 }
