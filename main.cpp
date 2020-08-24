@@ -9,7 +9,7 @@
 #include <fstream>
 #include <Math.h>
 using namespace std;
-//bien
+//node
 struct SINHVIENDK{
 	// khong trung
 	char MASV[12];
@@ -38,12 +38,14 @@ typedef struct{
 
 typedef struct {
 	// khong trung
+	// data
 	int MALOPTC;
 	char MAMH[10];
 	char NIENKHOA[50];
 	int HOCKY;
 	int NHOM;
 	int MAX,MIN;
+	// danh sach dang ky
 	DSDANGKY *dssv;
 }LOP;
 // node
@@ -71,7 +73,9 @@ struct DSSINHVIEN{
 // cay nhi phan tim kiem
 struct dslop{
 	int key;
+	// chi so can bang
 	int bf;
+	int height;
 	// data
 	LOP lop;
 	struct dslop *left = NULL;
@@ -89,6 +93,7 @@ DSLOP Rotate_Right(DSLOP ya);
 void LeftBalance(DSLOP &P);
 void RightBalance(DSLOP &P);
 DSLOP search(DSLOP,int);
+void InHoa(char ch[]);
 // file
 void LuuLTC(DSLOP);
 void LuuSV(DSSINHVIEN listSV);
@@ -132,6 +137,47 @@ void HinhVuong(int x1,int y1, int x2, int y2){
 		gotoxy(x2,i);
 		cout << "-";
 	}	
+}
+void xoa(char *a, int q)
+{
+            int n = strlen(a), i;
+            for (i = q; i <= n; i++)
+            {
+                        a[i] = a[i + 1];
+            }
+            n--;
+}
+void XoaKhoangTrangThua(char *ch){
+	    int i, n=strlen(ch);
+        for (i = 0; i < n; i++)
+        {
+            if (ch[0] == 32)
+            	{
+                    xoa(ch, 0);
+                    n--;
+                }
+            if (ch[n-1] == 32)
+                {
+                	xoa(ch, n-1);
+              		n--;
+                }
+            if (ch[i] == 32 && ch[i + 1] == 32)
+            {
+           			xoa(ch, i);
+           			i--;
+            		n--;
+            }
+        }
+}
+int confirm(){
+	char ch[2];
+	fflush(stdin);
+	cout << "Ban Co Chac Chan (Y/N): ";
+	gets(ch);
+	InHoa(ch);
+	
+	if(strcmp(ch,"Y") == 0) return 1;
+	return 0;
 }
 // CHECKS METHOD
 int KiemTraKiTu(char text[]){
@@ -182,16 +228,17 @@ int KiemTraSo(char so[]){
 	return 1;
 }
 void KiemTraLop(DSLOP root, LOP *&lop, char mmh[], char nienKhoa[], int hocKy, int nhom){
-	DSLOP tempRoot = NULL;
+	//NLR
 	if(root != NULL)    
-	   {
-	      KiemTraLop(root->left,lop,mmh,nienKhoa,hocKy,nhom);
-	      KiemTraLop(root->right,lop,mmh,nienKhoa,hocKy,nhom);
-	      if (root->lop.HOCKY == hocKy && strcmp(root->lop.MAMH,mmh) == 0 && strcmp(root->lop.NIENKHOA,nienKhoa) ==0 && 
+	   {	
+	   	  if (root->lop.HOCKY == hocKy && strcmp(root->lop.MAMH,mmh) == 0 && strcmp(root->lop.NIENKHOA,nienKhoa) ==0 && 
 		  	root->lop.NHOM == nhom) {
 				lop = &root->lop;
 				return;
 		  } 
+	      KiemTraLop(root->left,lop,mmh,nienKhoa,hocKy,nhom);
+	      KiemTraLop(root->right,lop,mmh,nienKhoa,hocKy,nhom);
+	      
 	   }
 }
 MONHOC* KiemTraMH(DSMONHOC &listMH, char maMH[]){
@@ -210,10 +257,27 @@ SINHVIEN *KiemTraSV(DSSINHVIEN listSV,char maSV[]){
 	return NULL;
 }
 int KiemTraDaDangKyLTC(DSDANGKY *listDK, char msv[]){
+	
 	for(SINHVIENDK *k = listDK->pFirst; k!=NULL; k=k->next){
 		if(strcmp(k->MASV,msv) == 0) return 0;
 	}
 	return 1;
+	
+
+}
+void KiemTraSVDaDangKyLTC(DSLOP root, int &check, char msv[]){
+	// NLR
+	if(root!=NULL){
+		if(check == 0) return;
+		for(SINHVIENDK *k = root->lop.dssv->pFirst; k!=NULL; k=k->next){
+				if(strcmp(k->MASV,msv) == 0) {
+					check = 0;
+					return;
+				}
+		}
+		KiemTraSVDaDangKyLTC(root->left,check,msv);
+		KiemTraSVDaDangKyLTC(root->right,check,msv);
+	}
 }
 // cac ham can thiet
 void InHoa(char ch[]){
@@ -234,15 +298,18 @@ char  *toChar(int number)
 }
 
 // tao danh sach lop TC la cay nhi phan AVL
+/*
 void Create_AVLTree(DSLOP &root,LOP lop){ 
 	int khoa, noidung;
 	char so[10];
 	DSLOP p;
-  
+  	XoaKhoangTrangThua(lop.NIENKHOA);
 	if (root==NULL)
 	{ 
+		// khoi tao gia tri dau tien
 		p = new dslop();
 		p->key = lop.MALOPTC;	p->lop = lop;   p->bf   = 0 ;   
+	
 		p->left = NULL;   p->right = NULL;
 		root =p;
     } else Insert(root,lop.MALOPTC,lop);
@@ -277,6 +344,7 @@ void Insert(DSLOP &pavltree, int x, LOP lop)
 		q = new dslop();
 		q->key =x;  q->lop = lop;  q->bf = 0;
 		q->left = NULL;  q->right = NULL;
+		
     if(x < fp->key)
       fp->left = q;
    else      fp->right = q;
@@ -366,21 +434,21 @@ DSLOP Rotate_Left(DSLOP root)
       }
    return p;
 }
-DSLOP Rotate_Right(DSLOP ya)
+DSLOP Rotate_Right(DSLOP root)
 {
-   DSLOP s;
-  if(ya == NULL)
+   DSLOP p;
+  if(root == NULL)
       printf("Khong the xoay phai vi cay bi rong.");
    else
-      if(ya->left == NULL)
+      if(root->left == NULL)
 	      printf("Khong the xoay phai vi khong co nut con ben trai.");
       else
       {
-	      s = ya->left;
-	      ya->left = s->right;
-	      s->right = ya;
+	      p = root->left;
+	      root->left = p->right;
+	      p->right = root;
       }
-   return s;
+   return p;
 } 
 void Left_Balance(DSLOP &P)
 {
@@ -412,31 +480,31 @@ void Left_Balance(DSLOP &P)
 }
 void Right_Balance(DSLOP &P)
 {
-switch(P->right->bf){
-	case 1: //Ghi chú: cho bi?t dây là tru?ng h?p m?t cân b?ng nào?
-		Rotate_Right(P->right);
-		Rotate_Left(P);
-		switch(P->bf){
-			case 0:
-			P->left->bf= 0;
-			P->right->bf= 0;
-			break;
-			case 1:
-			P->left->bf= 1;
-			P->right->bf= 0;
-			break;
-			case 2:
-			P->left->bf= 0;
-			P->right->bf= 2;
-			break;
-		} P->bf = 0;
-	break;
-	case 2: //Ghi chú: cho bi?t dây là tru?ng h?p m?t cân b?ng nào?Tài li?u hu?ng d?n th?c hành môn C?u trúc d? li?u và gi?i thu?t
-		Rotate_Left(P);
-		P->bf = 0;
-		P->left->bf = 0;
-	break;
-}
+	switch(P->right->bf){
+		case 1: //Ghi chú: cho bi?t dây là tru?ng h?p m?t cân b?ng nào?
+			Rotate_Right(P->right);
+			Rotate_Left(P);
+			switch(P->bf){
+				case 0:
+				P->left->bf= 0;
+				P->right->bf= 0;
+				break;
+				case 1:
+				P->left->bf= 1;
+				P->right->bf= 0;
+				break;
+				case 2:
+				P->left->bf= 0;
+				P->right->bf= 2;
+				break;
+			} P->bf = 0;
+		break;
+		case 2: //Ghi chú: cho bi?t dây là tru?ng h?p m?t cân b?ng nào?Tài li?u hu?ng d?n th?c hành môn C?u trúc d? li?u và gi?i thu?t
+			Rotate_Left(P);
+			P->bf = 0;
+			P->left->bf = 0;
+		break;
+	}
 } 
 DSLOP rp;
 void  remove_case_3 (DSLOP  &r )
@@ -446,30 +514,44 @@ void  remove_case_3 (DSLOP  &r )
    //den day r la nut cuc trai cua cay con ben phai co nut goc la rp}
     else 
 	{
-   rp->key = r->key;  	//Chep noi dung cua r sang rp ";
-   rp->lop =r->lop;	//  de lat nua free(rp)
-   rp = r;           	
-   r = rp->right;
+   		rp->key = r->key;  	//Chep noi dung cua r sang rp ";
+  		rp->lop =r->lop;	//  de lat nua free(rp)
+  	//	rp->bf = 
+  		rp = r;           	
+  		r = rp->right;
 	  }
 }
 void  xoaLTC(DSLOP &p,int x)
 {
-	if (p == NULL)  printf ("Khong tim thay");
+	if (p == NULL)  cout << "Khong tim thay";
 	else
-	  if (x < p->key)  xoaLTC (p->left,x);
-	  else if (x > p->key)
-		  xoaLTC ( p->right,x);
+	  if (x < p->key)  {
+	  	xoaLTC (p->left,x);
+	  	// cap nhat bf cho p
+	  	p->bf = p->bf - 1;
+	  	Left_Balance(p);
+	  }
+	  else if (x > p->key){
+	  		xoaLTC ( p->right,x);
+	  		// cap nhat bf cho p
+	  		p->bf = p->bf + 1;
+	  		Right_Balance(p);
+	  }
+		  
 	       else   	// p->key = x
 	       {
-		 rp = p;
-              if (rp->right == NULL)  p = rp->left;   
-	// p là nút lá hoac la nut chi co cay con ben trai
-		 else 	if (rp->left == NULL)
+	       	 // p->bf = 0; 
+			  rp = p;
+			
+              if (rp->right == NULL)  p = rp->left; 
+			// p là nút lá hoac la nut chi co cay con ben trai
+			  else 	if (rp->left == NULL)
 			   p = rp->right;  // p là nut co cay con ben phai
-			else remove_case_3 (rp->right);
+			  else remove_case_3 (rp->right);
 		 delete rp;
 	       }
 }
+
 void RemoveNode(DSLOP &dslop, int key){
 	if (dslop == NULL) return;
 	if (dslop->key > key){
@@ -482,7 +564,263 @@ void RemoveNode(DSLOP &dslop, int key){
 		// xoa nhu xoa nut root tren BST
 		xoaLTC(dslop,key);
 	}
-}
+}*/
+int height(DSLOP N)  
+{  
+    if (N == NULL)  
+        return 0;  
+    return N->height;  
+}  
+  
+// A utility function to get maximum 
+// of two integers  
+int max(int a, int b)  
+{  
+    return (a > b)? a : b;  
+}  
+  
+/* Helper function that allocates a  
+   new node with the given key and  
+   NULL left and right pointers. */
+DSLOP newNode(int key, LOP lop)  
+{  
+    DSLOP node = new dslop(); 
+    node->key = key;  
+    node->left = NULL;  
+    node->right = NULL;  
+    node->height = 1; 
+    node->lop = lop;        
+    cout << lop.MALOPTC;
+    return(node);  
+}  
+  
+// A utility function to right 
+// rotate subtree rooted with y  
+// See the diagram given above.  
+DSLOP rightRotate(DSLOP y)  
+{  
+    DSLOP x = y->left;  
+    DSLOP T2 = x->right;  
+  
+    // Perform rotation  
+    x->right = y;  
+    y->left = T2;  
+  
+    // Update heights  
+    y->height = max(height(y->left),  
+                    height(y->right)) + 1;  
+    x->height = max(height(x->left),  
+                    height(x->right)) + 1;  
+  
+    // Return new root  
+    return x;  
+}  
+  
+// A utility function to left  
+// rotate subtree rooted with x  
+// See the diagram given above.  
+DSLOP leftRotate(DSLOP x)  
+{  
+    DSLOP y = x->right;  
+    DSLOP T2 = y->left;  
+  
+    // Perform rotation  
+    y->left = x;  
+    x->right = T2;  
+  
+    // Update heights  
+    x->height = max(height(x->left),  
+                    height(x->right)) + 1;  
+    y->height = max(height(y->left),  
+                    height(y->right)) + 1;  
+  
+    // Return new root  
+    return y;  
+}  
+  
+// Get Balance factor of node N  
+int getBalance(DSLOP N)  
+{  
+    if (N == NULL)  
+        return 0;  
+    return height(N->left) -  
+           height(N->right);  
+}  
+  
+DSLOP Create_AVLTree(DSLOP &node, int key,LOP lop)  
+{  
+    /* 1. Perform the normal BST rotation */
+    if (node == NULL)  
+        return(newNode(key,lop));  
+  
+    if (key < node->key)  
+        node->left = Create_AVLTree(node->left, key,lop);  
+    else if (key > node->key)  
+        node->right = Create_AVLTree(node->right, key,lop);  
+    else // Equal keys not allowed  
+        return node;  
+  
+    /* 2. Update height of this ancestor node */
+    node->height = 1 + max(height(node->left),  
+                           height(node->right));  
+  
+    /* 3. Get the balance factor of this  
+        ancestor node to check whether  
+        this node became unbalanced */
+    int balance = getBalance(node);  
+  
+    // If this node becomes unbalanced, 
+    // then there are 4 cases  
+  
+    // Left Left Case  
+    if (balance > 1 && key < node->left->key)  
+        return rightRotate(node);  
+  
+    // Right Right Case  
+    if (balance < -1 && key > node->right->key)  
+        return leftRotate(node);  
+  
+    // Left Right Case  
+    if (balance > 1 && key > node->left->key)  
+    {  
+        node->left = leftRotate(node->left);  
+        return rightRotate(node);  
+    }  
+  
+    // Right Left Case  
+    if (balance < -1 && key < node->right->key)  
+    {  
+        node->right = rightRotate(node->right);  
+        return leftRotate(node);  
+    }  
+  
+    /* return the (unchanged) node pointer */
+    return node;  
+}  
+  
+/* Given a non-empty binary search tree,  
+return the node with minimum key value  
+found in that tree. Note that the entire  
+tree does not need to be searched. */
+DSLOP  minValueNode(DSLOP node)  
+{  
+    DSLOP current = node;  
+  
+    /* loop down to find the leftmost leaf */
+    while (current->left != NULL)  
+        current = current->left;  
+  
+    return current;  
+}  
+  
+// Recursive function to delete a node  
+// with given key from subtree with  
+// given root. It returns root of the  
+// modified subtree.  
+DSLOP deleteNode(DSLOP root, int key)  
+{  
+      
+    // STEP 1: PERFORM STANDARD BST DELETE  
+    if (root == NULL)  
+        return root;  
+  
+    // If the key to be deleted is smaller  
+    // than the root's key, then it lies 
+    // in left subtree  
+    if ( key < root->key )  
+        root->left = deleteNode(root->left, key);  
+  
+    // If the key to be deleted is greater  
+    // than the root's key, then it lies  
+    // in right subtree  
+    else if( key > root->key )  
+        root->right = deleteNode(root->right, key);  
+  
+    // if key is same as root's key, then  
+    // This is the node to be deleted  
+    else
+    {  
+        // node with only one child or no child  
+        if( (root->left == NULL) || 
+            (root->right == NULL) )  
+        {  
+            DSLOP temp = root->left ?  
+                         root->left :  
+                         root->right;  
+  
+            // No child case  
+            if (temp == NULL)  
+            {  
+                temp = root;  
+                root = NULL;  
+            }  
+            else // One child case  
+            *root = *temp; // Copy the contents of  
+                           // the non-empty child  
+            free(temp);  
+        }  
+        else
+        {  
+            // node with two children: Get the inorder  
+            // successor (smallest in the right subtree)  
+            DSLOP temp = minValueNode(root->right);  
+  
+            // Copy the inorder successor's  
+            // data to this node  
+            root->key = temp->key;  
+  
+            // Delete the inorder successor  
+            root->right = deleteNode(root->right,  
+                                     temp->key);  
+        }  
+    }  
+  
+    // If the tree had only one node 
+    // then return  
+    if (root == NULL)  
+    return root;  
+  
+    // STEP 2: UPDATE HEIGHT OF THE CURRENT NODE  
+    root->height = 1 + max(height(root->left),  
+                           height(root->right));  
+  
+    // STEP 3: GET THE BALANCE FACTOR OF  
+    // THIS NODE (to check whether this  
+    // node became unbalanced)  
+    int balance = getBalance(root);  
+  
+    // If this node becomes unbalanced,  
+    // then there are 4 cases  
+  
+    // Left Left Case  
+    if (balance > 1 &&  
+        getBalance(root->left) >= 0)  
+        return rightRotate(root);  
+  
+    // Left Right Case  
+    if (balance > 1 &&  
+        getBalance(root->left) < 0)  
+    {  
+        root->left = leftRotate(root->left);  
+        return rightRotate(root);  
+    }  
+  
+    // Right Right Case  
+    if (balance < -1 &&  
+        getBalance(root->right) <= 0)  
+        return leftRotate(root);  
+  
+    // Right Left Case  
+    if (balance < -1 &&  
+        getBalance(root->right) > 0)  
+    {  
+        root->right = rightRotate(root->right);  
+        return leftRotate(root);  
+    }  
+  
+    return root;  
+}  
+  
 DSLOP search(DSLOP root, int x)
 {
    DSLOP p = NULL;
@@ -601,8 +939,9 @@ void ThemLTC(DSLOP &root,DSMONHOC listMH, char nienKhoa[], int hocKy){
 		goto max;
 	}
 	tempLop.MAX = atoi(max);
-	Create_AVLTree(root,tempLop);
+	root = Create_AVLTree(root,tempLop.MALOPTC,tempLop);
 	LuuLTC(root);
+	Posorder(root);
 }
 }
 // xoa lop tin chi
@@ -611,7 +950,7 @@ void XoaLTC(DSLOP &root,int mltc){
 		cout << "Ma lop tin chi khong ton tai!!!";
 		return;
 	}
-	xoaLTC(root,mltc);
+	deleteNode(root,mltc);
 	cout << "DA XOA THANH CONG 1 LTC!!";
 }
 void SuaLTC(DSLOP &root,DSMONHOC listMH){
@@ -733,7 +1072,15 @@ void InDanhSachSVCuaLTC(){
 	if(strlen(mmh) == 0) return;	
 	// tim kiem trong danh sach lop tc lay ra danh sach sv trung khop voi dieu kien tren
 	KiemTraLop(root,tempLop,mmh,nienKhoa,atoi(hocKy),atoi(nhom));
+	if(tempLop == NULL ) {
+		cout << "ERROR: Du Lieu Khong Ton tai...";
+		Sleep(1000);
+		return;
+	}
+	
 	XuatSVDK(*tempLop,KiemTraMH(listMH,tempLop->MAMH)->TENMH, nienKhoa, atoi(hocKy), nhom);
+	
+	cout << "Nhan (ENTER) de thoat...";
 	fflush(stdin);
 	gets(mmh);	
 }
@@ -741,6 +1088,13 @@ void InDanhSachSVCuaLTC(){
 void ThemNodeSV(DSSINHVIEN &listSV,SINHVIEN *sinhVien){
 	SINHVIEN *temp;
 	SINHVIEN *i;
+	
+	// chuan hoa
+	XoaKhoangTrangThua(sinhVien->HO);
+	XoaKhoangTrangThua(sinhVien->TEN);
+	XoaKhoangTrangThua(sinhVien->MALOP);
+	XoaKhoangTrangThua(sinhVien->MASV);
+	XoaKhoangTrangThua(sinhVien->SDT);
 	// neu dsach rong
 	if (listSV.pFirst == NULL){
 		listSV.soLuong++;
@@ -781,6 +1135,8 @@ void ThemNodeSV(DSSINHVIEN &listSV,SINHVIEN *sinhVien){
 }
 void XoaNodeSV(DSSINHVIEN &listSV,char maSV[]){
 	SINHVIEN *t;
+	// kiem tra sinh vien da dang ky mon hoc
+
 	if(strcmp(listSV.pFirst->MASV,maSV) == 0){
 		SINHVIEN *temp = listSV.pFirst;
 		listSV.pFirst = listSV.pFirst->next;
@@ -893,7 +1249,7 @@ void ThemSV(DSSINHVIEN &listSV,char maLop[]){
 		} else sinhVien->NAM = atoi(number);
 		
 		ThemNodeSV(listSV,sinhVien);
-		LuuSV(listSV);
+		
 	}
 
 }
@@ -906,12 +1262,12 @@ void SuaSV(DSSINHVIEN &listSV){
 	gets(sinhVien->MALOP);
 	InHoa(sinhVien->MALOP);
 	if (KiemTraKiTu(sinhVien->MALOP) == 0){
-		cout << "*Khong duoc chua ki tu dac biet!" << endl;
+		cout << "ERROR: Khong duoc chua ki tu dac biet!" << endl;
 		goto lop;
 	}
 	
 	if(KiemTraKhoangTrang(sinhVien->MALOP) == 0 || strlen(sinhVien->MALOP) > 15 || strlen(sinhVien->MALOP) == 0){
-		cout << "*Khong duoc chua khoang trang va do dai khong qua 15 ki tu!" << endl;
+		cout << "ERROR: Khong duoc chua khoang trang va do dai khong qua 15 ki tu!" << endl;
 		goto lop;
 	}
 	
@@ -936,16 +1292,7 @@ void SuaSV(DSSINHVIEN &listSV){
 		maSV:
 		cout << "MSV: " << maSV << endl;
 		strcpy(sinhVien->MASV,maSV);
-		/*
-		fflush(stdin);
-		gets(sinhVien.MASV);
-		InHoa(sinhVien.MASV);
-		if(strlen(sinhVien.MASV) == 0) return;
-		if (KiemTraSV(listSV,sinhVien.MASV) == NULL){
-			cout << "ERROR: Ma sinh vien da ton tai" << endl;
-			goto maSV;
-		}
-		*/
+
 		// ho
 		ho:
 		cout << "Nhap Ho: ";
@@ -1014,6 +1361,8 @@ void SuaSV(DSSINHVIEN &listSV){
 // e
 void ThemMH(DSMONHOC &listMH, MONHOC *monHoc){ 
 	listMH.monhoc[listMH.soluong] = new MONHOC();
+	XoaKhoangTrangThua(monHoc->TENMH);
+	XoaKhoangTrangThua(monHoc->MAMH);
 	listMH.monhoc[listMH.soluong] = monHoc;
 	listMH.soluong++;
 } 
@@ -1085,7 +1434,10 @@ void MenuLTC(DSLOP &root,DSMONHOC &listMH){
 				cout << "Nhap Ma Lop Tin Chi Can Xoa: ";
 				cin >> mltc;
 				if(mltc == 0) break;
-				XoaLTC(root,mltc);
+				char ch[2];
+	
+				if  (confirm() == 0) return; 
+				deleteNode(root,mltc);
 				Sleep(1000);
 				LuuLTC(root);
 				break;
@@ -1200,7 +1552,8 @@ void DocSV(DSSINHVIEN &listSV){
 void LuuSVDK(LOP lop){
 	ofstream luu;
 	char fileName[1000] ;
-	fileName,sprintf(fileName,"%d", lop.MALOPTC);
+	// int -> char
+	sprintf(fileName,"%d", lop.MALOPTC);
 	strcat(fileName,".txt");
 	luu.open(fileName, ios::out);
 	luu << lop.dssv->soluong << endl;
@@ -1261,12 +1614,12 @@ void DocLTC(DSLOP &root){
 		 docFile >> tempLOP->MALOPTC;
 	 	 docFile >>  tempLOP->MAMH ;
 	 	 docFile >>  tempLOP->NHOM;
-	 	 docFile >>  tempLOP->HOCKY ;
+	 	 docFile >>  tempLOP->HOCKY;
 	 	 docFile >>  tempLOP->NIENKHOA ;
 	   	 docFile >>  tempLOP->MAX ;
 	     docFile >>  tempLOP->MIN;
 	     tempLOP->dssv = new DSDANGKY;
-	     Create_AVLTree(root,*tempLOP);
+	     root = Create_AVLTree(root,tempLOP->MALOPTC,*tempLOP);
 	     DocSVDK(*tempLOP,tempLOP->dssv);
 	}  while(!docFile.eof());
 	docFile.close();
@@ -1377,7 +1730,8 @@ void MenuMH(DSMONHOC &listMH){
 					Sleep(1000);
 					break;
 				}
-				// confirm
+				char ch[2];
+				if  (confirm() == 0) return;
 				XoaMH(listMH,maMH);
 				cout << "Xoa Thanh Cong !!!";
 				Sleep(1000);
@@ -1513,6 +1867,15 @@ void MenuSV(DSSINHVIEN &listSV){
 					Sleep(1000);
 					break;
 				}
+				int check = 1;
+				//char ch[2];
+				KiemTraSVDaDangKyLTC(root,check,maSV);
+				if ( check == 0){
+					cout << "Sinh Vien Da Dang Ky Lop Tin Chi. Khong Duoc Xoa....";
+					Sleep(1000);
+					return;
+				}
+				if (confirm()  == 0 ) return;
 				XoaNodeSV(listSV,maSV);
 				cout << "XOA THANH CONG!!" << endl;
 				Sleep(1000);
@@ -1641,8 +2004,9 @@ void NhapDiem(DSLOP root){
 	LOP *tempLop = NULL;
 	int i=0;
 	SINHVIENDK *k;
-	cout <<"\t\t\tMENU NHAP DIEM" << endl;
+	system("cls");
 	
+	cout <<"\t\t\tMENU NHAP DIEM" << endl;
 	cout << "Nien Khoa: ";
 	fflush(stdin);
 	gets(nienKhoa);
@@ -1666,22 +2030,103 @@ void NhapDiem(DSLOP root){
 	gets(mmh);
 	InHoa(mmh);
 	if(strlen(mmh) == 0) return;	
+	
 	// tim kiem trong danh sach lop tc lay ra danh sach sv trung khop voi dieu kien tren
 	KiemTraLop(root,tempLop,mmh,nienKhoa,atoi(hocKy),atoi(nhom));
+	if(tempLop == NULL ) {
+		cout << "ERROR: Du Lieu Khong Ton tai...";
+		Sleep(1000);
+		return;
+	}
+	
 	k = tempLop->dssv->pFirst;
-	XuatSVDK(*tempLop,KiemTraMH(listMH,tempLop->MAMH)->TENMH, nienKhoa, atoi(hocKy), nhom);
-	while(i!= tempLop->dssv->soluong && k!=NULL){
-		gotoxy(60,3+i);
+	// nhap diem
+	while( k!=NULL){
+		XuatSVDK(*tempLop, KiemTraMH(listMH,tempLop->MAMH)->TENMH, nienKhoa, atoi(hocKy), nhom);
+		gotoxy(60,4+i);
 		cout << ": ";
 		fflush(stdin);
 		gets(diem);
+		//
 		if(strlen(diem) == 0 || KiemTraSo(diem) == 0) return;
+		if(atoi(diem) < 0 || atoi(diem) > 10) continue;
+		
 		k->DIEM = atoi(diem);
 		k=k->next;
+		i++;
 	}
+	XuatSVDK(*tempLop,KiemTraMH(listMH,tempLop->MAMH)->TENMH, nienKhoa, atoi(hocKy), nhom);
 	LuuSVDK(*tempLop);
+	cout << endl << "Nhap (ENTER) de thoat...";
+	gets(mmh);
+}
+// j
+// tinh so tin chi cua lop do
+void getMaxTC(DSLOP root, char maLop[],float &n,int &nam){
+	if(root != NULL){
+		  // tim xem sinh vien thuoc lop can tim co trong list dsdk neu co thi cong tin chi cua cai lop lai
+	   	  for(SINHVIENDK *k=root->lop.dssv->pFirst; k!=NULL; k=k->next){
+	   	  		if( strcmp(KiemTraSV(listSV,k->MASV)->MALOP,maLop) == 0){
+	   	  			n= n + KiemTraMH(listMH,root->lop.MAMH)->STCLT + KiemTraMH(listMH,root->lop.MAMH)->STCTH;
+	   	  			nam = KiemTraSV(listSV,k->MASV)->NAM;
+	   	  			break;
+	   	  		}
+	   	  }
+	      getMaxTC(root->left, maLop, n,nam);
+	      getMaxTC(root->right, maLop, n , nam);
+	   }
+}
+void getDiemSV(DSLOP root, char maSV[], float &diem){
+	if(root != NULL){
+		  // tim xem sinh vien thuoc lop can tim co trong list dsdk neu co thi cong tin chi cua cai lop lai
+	   	  for(SINHVIENDK *k=root->lop.dssv->pFirst; k!=NULL; k=k->next){
+	   	  		if( strcmp(KiemTraSV(listSV,k->MASV)->MASV,maSV) == 0){
+	   	  			diem = diem + (KiemTraMH(listMH,root->lop.MAMH)->STCLT + KiemTraMH(listMH,root->lop.MAMH)->STCTH) * k->DIEM;
+	   	  			break;
+	   	  		}
+	   	  }
+	      getDiemSV(root->left, maSV, diem);
+	      getDiemSV(root->right, maSV, diem);
+	   }
+}
+void XuatDiemTB(DSSINHVIEN listSV, char maLop[], int nam){
+	system("cls");
+	cout << "\t  BANG THONG KE DIEM TRUNG BINH KHOA HOC" << endl;
+	cout << "\t  Lop: " << maLop << "\t  Nam nhap hoc: " << nam << endl;
+	cout << right<<setw(5)<< "STT|" << right<<setw(15)<< "MASV|" << right<<setw(15)<< "HO|" <<right<<setw(13)<< "TEN|" <<right<<setw(10)<< " DIEM TB|" << endl;
+	cout <<"-----------------------------------------------------------" << endl;
+	int i=1;	
+	float solgTC = 0;
+	getMaxTC(root,maLop,solgTC,nam);
+	for(SINHVIEN *k=listSV.pFirst; k!=NULL; k=k->next){
+		if(strcmp(k->MALOP,maLop) == 0){
+			float diemSV = 0;
+			
+			getDiemSV(root,k->MASV,diemSV);
+			
+			cout << right<<setw(4)<< i <<"|" << right<<setw(15)<< k->MASV <<"|" 
+			<< right<<setw(14)<< KiemTraSV(listSV,k->MASV)->HO <<"|" <<right<<setw(13)<<KiemTraSV(listSV,k->MASV)->TEN
+			<<"|" <<right<<setw(9)<< (float) diemSV/solgTC << "|" << endl;
+			i++;
+		}
+	}
+}
+void InBangDiemTrungBinh(){
+	float n=0;
+	char maLop[15];
+	LOP lop;
+	int nam;
+	// nhap maLop
+	cout << "Nhap Ma Lop: ";
+	fflush(stdin);
+	gets(maLop);
+	InHoa(maLop);
+//	getMaxTC(root,maLop,n,nam);
 	
-	cin >> tempLop->MAMH;
+	XuatDiemTB(listSV,maLop, nam);
+	
+	//XuatSVTheoDK(listSV,maLop);
+	gets(maLop);
 }
 void MenuQuanLyThongTin(){
 		char chon[10];
@@ -1708,7 +2153,10 @@ void MenuQuanLyThongTin(){
 					fflush(stdin);
 					gets(maLop);
 					InHoa(maLop);
+					if(strlen(maLop) == 0) break;
+					
 					XuatSVTheoDK(listSV,maLop);
+					cout << "An (ENTER) De Thoat....";
 					gets(maLop);
 					break;
 				}
@@ -1721,6 +2169,10 @@ void MenuQuanLyThongTin(){
 					system("cls");
 					XuatMH(listMH);
 					gets(key);
+					break;
+				}
+				case 5:{
+					InBangDiemTrungBinh();
 					break;
 				}
 			}
@@ -1750,7 +2202,7 @@ void MainMenu(DSSINHVIEN &listSV,DSMONHOC &listMH, DSLOP &root){
 				break;
 			}
 			case 2:{
-				
+				NhapDiem(root);
 				break;
 			}
 			case 3:{
@@ -1853,9 +2305,9 @@ void XuatSVTheoDK(DSSINHVIEN listSV, char maLop[]){
 	cout << endl <<"\t----------------------------------------------------------------------------------------------" << endl;
 	// kiem tra mang trong
 	if(listSV.pLast == NULL) return;
-	// kiem tra maLop co ton tai khong
+	// kiem tra maLop co ton tai khong ?
 	if(strcmp(listSV.pLast->MALOP, maLop) < 0 ) return;
-	
+
 	int check = 0;
 	for(SINHVIEN *i = listSV.pFirst; i!=NULL; i=i->next){
 		if(strcmp(i->MALOP,maLop) != 0 && check == 1) break;
@@ -1878,12 +2330,11 @@ void XuatSVDK(LOP lop,char tenMon[], char nienKhoa[], int hocKy, char nhom[]){
 	cout << right<<setw(5)<< "STT|" << right<<setw(15)<< "MASV|" << right<<setw(15)<< "HO|" <<right<<setw(13)<< "TEN|" <<right<<setw(10)<< "DIEM|" << endl;
 	cout <<"-----------------------------------------------------------" << endl;
 	int i=1;	
-	char showScore;
-	for(SINHVIENDK *k=lop.dssv->pFirst; k!=NULL; k=k->next){
-		if(k->DIEM == -1) showScore = ' '; else showScore = (char) k->DIEM + '0';
-		cout << right<<setw(3)<< i <<"|" << right<<setw(15)<< k->MASV <<"|" 
-			<< right<<setw(13)<< KiemTraSV(listSV,k->MASV)->HO<<"|" <<right<<setw(13)<<KiemTraSV(listSV,k->MASV)->TEN
-			<<"|" <<right<<setw(9)<< k->DIEM << "|" << endl;
+
+	for(SINHVIENDK *k=lop.dssv->pFirst; k!=NULL; k=k->next){	
+		cout << right<<setw(4)<< i <<"|" << right<<setw(15)<< k->MASV <<"|" 
+			<< right<<setw(14)<< KiemTraSV(listSV,k->MASV)->HO <<"|" <<right<<setw(13)<<KiemTraSV(listSV,k->MASV)->TEN
+			<<"|" <<right<<setw(9)<< k->DIEM  << "|" << endl;
 			i++;	
 	}
 }
