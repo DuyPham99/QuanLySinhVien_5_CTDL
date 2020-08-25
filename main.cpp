@@ -74,8 +74,7 @@ struct DSSINHVIEN{
 // cay nhi phan tim kiem
 struct dslop{
 	int key;
-	// chi so can bang
-	int bf;
+	
 	int height;
 	// data
 	LOP lop;
@@ -592,7 +591,6 @@ DSLOP newNode(int key, LOP lop)
     node->right = NULL;  
     node->height = 1; 
     node->lop = lop;        
-    cout << lop.MALOPTC;
     return(node);  
 }  
   
@@ -718,7 +716,8 @@ DSLOP  minValueNode(DSLOP node)
 // Recursive function to delete a node  
 // with given key from subtree with  
 // given root. It returns root of the  
-// modified subtree.  
+// modified subtree. 
+
 DSLOP deleteNode(DSLOP root, int key)  
 {  
       
@@ -1030,7 +1029,7 @@ void SuaLTC(DSLOP &root,DSMONHOC listMH){
 	if (strlen(max) == 0){
 		tempLop->MAX = temp->lop.MAX;
 	} else {
-		if(KiemTraSo(max) == 0){
+	if(KiemTraSo(max) == 0){
 		cout << "*Khong phai la so! Vui long nhap lai.." << endl;
 		goto max;
 		}
@@ -1046,7 +1045,7 @@ void InDanhSachSVCuaLTC(){
 	char hocKy[10],nhom[10],diem[10];
 	LOP *tempLop = NULL;
 	int i=0;
-	SINHVIENDK *k;
+
 	cout <<"\t\t\tMENU NHAP DIEM" << endl;
 	
 	cout << "Nien Khoa: ";
@@ -1465,12 +1464,16 @@ void DangKyTC(DSDANGKY *dsdk,char maSV[],float diem){
 	SINHVIENDK *i = dsdk->pFirst;
 	SINHVIENDK *t;
 	dsdk->soluong++;
+	
 	if (dsdk->pFirst == NULL){
 		dsdk->pFirst = data;
 		dsdk->pLast = data;
 		return;
 	}
-	for(i  ; i!=NULL && strcmp(i->MASV,data->MASV) < 0;t=i, i=i->next);
+	
+	// tu chay tim t va i
+	for(i ; i!=NULL && strcmp(i->MASV,data->MASV) < 0;t=i, i=i->next);
+	
 	if (i == NULL){
 		dsdk->pLast->next = data;
 		dsdk->pLast = data;
@@ -1905,7 +1908,7 @@ void MenuDangKyLTC(DSLOP &root,DSSINHVIEN &listSV){
 	msv:
 	cout << "Nhap Ma Sinh Vien: ";
 	fflush(stdin);
-		gets(msv);
+	gets(msv);
 	InHoa(msv);
 	if(strlen(msv) == 0) return;
 	if(KiemTraSV(listSV,msv) == NULL){
@@ -1917,27 +1920,32 @@ void MenuDangKyLTC(DSLOP &root,DSSINHVIEN &listSV){
 	gets(nienKhoa);
 	InHoa(nienKhoa);
 	if(strlen(nienKhoa) == 0) return;
+	
 	cout << "Hoc Ky: ";
 	fflush(stdin);
 	gets(hocKy);
 	system("cls");
 	//check xem co lop tai nien khoa va hoc ky do khong
 	XuatLTCTheoDK(root,nienKhoa,atoi(hocKy),check);
+	
 	while (check == 1){
 		mmh:
 		char chon[5]="";
 		int maLTC[50];
 		system("cls");
 		XuatLTCTheoDK(root,nienKhoa,atoi(hocKy),check);
+		cout << endl <<"=====================================================================";
 		XuatMH(tempListMH);
 		cout << "Luachon(1: Chon/2: Huy/3: Luu): ";
 		fflush(stdin);
 		gets(chon);
 		InHoa(chon);
 		if(strlen(chon) == 0) break;
+		
 		while(atoi(chon) == 1){
 			system("cls");	
 			XuatLTCTheoDK(root,nienKhoa,atoi(hocKy),check); cout<< endl;
+			cout << "=====================================================================" << endl;
 			XuatMH(tempListMH);
 			cout << "MLTC: ";
 			fflush(stdin);
@@ -1977,12 +1985,16 @@ void MenuDangKyLTC(DSLOP &root,DSSINHVIEN &listSV){
 			cout << "MLTC (Can Huy): ";
 			fflush(stdin);
 			gets(mltc);
+			
 			if(strlen(mltc) == 0) break;
+			
 			for(int j=0;j<i; j++){
 				if(atoi(mltc) == maLTC[j]){
+					// xoa phan hien thi
 					XoaMH(tempListMH,KiemTraMLTC(root,atoi(mltc))->lop.MAMH);
+					// xoa mang dang ky
 					for(int k=j; k<i-1; k++){
-						maLTC[k] = maLTC[k+1];
+						 maLTC[k] = maLTC[k+1];
 					}
 					i--;
 					break;
@@ -2083,6 +2095,7 @@ void getDiemSV(DSLOP root, char maSV[], float &diem){
 		  // tim xem sinh vien thuoc lop can tim co trong list dsdk neu co thi cong tin chi cua cai lop lai
 	   	  for(SINHVIENDK *k=root->lop.dssv->pFirst; k!=NULL; k=k->next){
 	   	  		if( strcmp(KiemTraSV(listSV,k->MASV)->MASV,maSV) == 0){
+	   	  			if( k->DIEM == -1) diem++;
 	   	  			diem = diem + (KiemTraMH(listMH,root->lop.MAMH)->STCLT + KiemTraMH(listMH,root->lop.MAMH)->STCTH) * k->DIEM;
 	   	  			break;
 	   	  		}
@@ -2336,7 +2349,7 @@ void XuatSVDK(LOP lop,char tenMon[], char nienKhoa[], int hocKy, char nhom[]){
 	for(SINHVIENDK *k=lop.dssv->pFirst; k!=NULL; k=k->next){	
 		cout << right<<setw(4)<< i <<"|" << right<<setw(15)<< k->MASV <<"|" 
 			<< right<<setw(14)<< KiemTraSV(listSV,k->MASV)->HO <<"|" <<right<<setw(13)<<KiemTraSV(listSV,k->MASV)->TEN
-			<<"|" <<right<<setw(9)<< k->DIEM  << "|" << endl;
+			<<"|" <<right<<setw(9)<< (float) k->DIEM  << "|" << endl;
 			i++;	
 	}
 }
