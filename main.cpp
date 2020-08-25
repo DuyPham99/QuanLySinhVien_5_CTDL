@@ -43,11 +43,11 @@ typedef struct {
 	int MALOPTC;
 	char MAMH[10];
 	char NIENKHOA[50];
-	int HOCKY;
-	int NHOM;
-	int MAX,MIN;
+	unsigned int HOCKY;
+	unsigned int NHOM;
+	unsigned int MAX,MIN;
 	// danh sach dang ky
-	DSDANGKY *dssv;
+	DSDANGKY *dssv=NULL;
 }LOP;
 // node
 struct SINHVIEN{
@@ -73,9 +73,6 @@ struct DSSINHVIEN{
 
 // cay nhi phan tim kiem
 struct dslop{
-	int key;
-	
-	int height;
 	// data
 	LOP lop;
 	struct dslop *left = NULL;
@@ -299,214 +296,7 @@ char  *toChar(int number)
 }
 
 // tao danh sach lop TC la cay nhi phan AVL
-/*
-void Create_AVLTree(DSLOP &root,LOP lop){ 
-	int khoa, noidung;
-	char so[10];
-	DSLOP p;
-  	XoaKhoangTrangThua(lop.NIENKHOA);
-	if (root==NULL)
-	{ 
-		// khoi tao gia tri dau tien
-		p = new dslop();
-		p->key = lop.MALOPTC;	p->lop = lop;   p->bf   = 0 ;   
-	
-		p->left = NULL;   p->right = NULL;
-		root =p;
-    } else Insert(root,lop.MALOPTC,lop);
-}
-// them vao danh sach lopTC
-void Insert(DSLOP &pavltree, int x, LOP lop)
-{
-   DSLOP   fp, p, q,    	
-           fya, ya,     	              	
-           s;           
-   int imbal;           	
 
-	   fp = NULL;   p = pavltree;
-	   fya = NULL;   ya = p;
-
-   while(p != NULL)
-   {
-	      if (x == p->key)  
-	         return;
-	      if (x < p->key)
-		 	q = p->left;
-	      else q = p->right;
-	      if(q != NULL)
-	         if(q->bf != 0) 
-	         { fya = p;
-	            ya = q;
-	         }
-	      fp = p;
-	      p = q;
-   }
-
-		q = new dslop();
-		q->key =x;  q->lop = lop;  q->bf = 0;
-		q->left = NULL;  q->right = NULL;
-		
-    if(x < fp->key)
-      fp->left = q;
-   else      fp->right = q;
-   if(x < ya->key)
-      p = ya->left;
-   else
-      p = ya->right;
-   s = p;   
-   while(p != q)
-   { if(x < p->key)
-      { p->bf = 1;
-         p = p->left;
-      }
-      else
-      {  	p->bf = -1;
-	 	p = p->right;
-      }
-   }
-   if(x < ya->key)
-      imbal = 1;
-   else
-      imbal = -1;
-
-   if(ya->bf == 0)
-   { ya->bf = imbal;
-      return;
-   }
-   if(ya->bf != imbal)
-   { ya->bf = 0;
-      return;
-   }
-
-   if(s->bf == imbal)   
-   { if(imbal == 1)   
-         p = Rotate_Right(ya);
-      else               
-         p = Rotate_Left(ya);
-      ya->bf = 0;
-      s->bf = 0;
-   }
-   else                 
-   { if(imbal == 1)    
-      { ya->left = Rotate_Left(s);
-         p = Rotate_Right(ya);
-      }
-      else            
-      { 	ya->right = Rotate_Right(s);
-	 	p = Rotate_Left(ya);
-      }
-      if(p->bf == 0)    
-      { ya->bf = 0;
-         s->bf = 0;
-      }
-      else
-         if(p->bf == imbal)
-         { ya->bf = -imbal;
-            s->bf = 0;
-         }
-         else
-         { ya->bf = 0;
-            s->bf = imbal;
-         }
-      p->bf = 0;
-   }
-   if(fya == NULL)
-      pavltree = p;
-   else
-      if(ya == fya->right)
-         fya->right = p;
-      else
-         fya->left = p;
-}
-// cac phep toan can bang cay nhi phan
-DSLOP Rotate_Left(DSLOP root)
-{
-   DSLOP p;
-   if(root == NULL)
-      printf("Khong the xoay trai vi cay bi rong.");
-   else
-      if(root->right == NULL)
-	      printf("Khong the xoay trai vi khong co nut con ben phai.");
-      else
-      {
-	      p = root->right;
-	      root->right = p->left;
-	      p->left = root;
-      }
-   return p;
-}
-DSLOP Rotate_Right(DSLOP root)
-{
-   DSLOP p;
-  if(root == NULL)
-      printf("Khong the xoay phai vi cay bi rong.");
-   else
-      if(root->left == NULL)
-	      printf("Khong the xoay phai vi khong co nut con ben trai.");
-      else
-      {
-	      p = root->left;
-	      root->left = p->right;
-	      p->right = root;
-      }
-   return p;
-} 
-void Left_Balance(DSLOP &P)
-{
-	switch(P->left->bf){
-	case 1: //m?t cân b?ng trái trái
-			Rotate_Right(P);
-			P->bf = 0;
-			P->right->bf = 0;
-			break;
-	case 2: //Ghi chú: cho bi?t dây là tru?ng h?p m?t cân b?ng nào?
-		Rotate_Left(P->left);
-		Rotate_Right(P);
-		switch(P->bf){
-			case 0:
-			P->left->bf= 0;
-			P->right->bf= 0;
-			break;
-			case 1:
-			P->left->bf= 0;
-			P->right->bf= 2;
-			break;
-			case 2:
-			P->left->bf= 1;
-			P->right->bf= 0;
-			break;
-		} P->bf = 0;
-		break;
-	}
-}
-void Right_Balance(DSLOP &P)
-{
-	switch(P->right->bf){
-		case 1: //Ghi chú: cho bi?t dây là tru?ng h?p m?t cân b?ng nào?
-			Rotate_Right(P->right);
-			Rotate_Left(P);
-			switch(P->bf){
-				case 0:
-				P->left->bf= 0;
-				P->right->bf= 0;
-				break;
-				case 1:
-				P->left->bf= 1;
-				P->right->bf= 0;
-				break;
-				case 2:
-				P->left->bf= 0;
-				P->right->bf= 2;
-				break;
-			} P->bf = 0;
-		break;
-		case 2: //Ghi chú: cho bi?t dây là tru?ng h?p m?t cân b?ng nào?Tài li?u hu?ng d?n th?c hành môn C?u trúc d? li?u và gi?i thu?t
-			Rotate_Left(P);
-			P->bf = 0;
-			P->left->bf = 0;
-		break;
-	}
-} 
 DSLOP rp;
 void  remove_case_3 (DSLOP  &r )
 {
@@ -515,319 +305,60 @@ void  remove_case_3 (DSLOP  &r )
    //den day r la nut cuc trai cua cay con ben phai co nut goc la rp}
     else 
 	{
-   		rp->key = r->key;  	//Chep noi dung cua r sang rp ";
+   	 	//Chep noi dung cua r sang rp ";
   		rp->lop =r->lop;	//  de lat nua free(rp)
-  	//	rp->bf = 
   		rp = r;           	
   		r = rp->right;
 	  }
 }
-void  xoaLTC(DSLOP &p,int x)
+void  xoaLTC(DSLOP &p,int mltc)
 {
 	if (p == NULL)  cout << "Khong tim thay";
 	else
-	  if (x < p->key)  {
-	  	xoaLTC (p->left,x);
-	  	// cap nhat bf cho p
-	  	p->bf = p->bf - 1;
-	  	Left_Balance(p);
+	  if (mltc < p->lop.MALOPTC)  {
+	  	xoaLTC (p->left, mltc);
 	  }
-	  else if (x > p->key){
-	  		xoaLTC ( p->right,x);
-	  		// cap nhat bf cho p
-	  		p->bf = p->bf + 1;
-	  		Right_Balance(p);
+	  else if (mltc > p->lop.MALOPTC){
+	  		xoaLTC ( p->right, mltc);
 	  }
 		  
-	       else   	// p->key = x
-	       {
-	       	 // p->bf = 0; 
+	       else   	
+	       { 
 			  rp = p;
 			
               if (rp->right == NULL)  p = rp->left; 
-			// p là nút lá hoac la nut chi co cay con ben trai
-			  else 	if (rp->left == NULL)
-			   p = rp->right;  // p là nut co cay con ben phai
+			
+			  else 	if (rp->left == NULL) p = rp->right;  // p là nut co cay con ben phai
 			  else remove_case_3 (rp->right);
 		 delete rp;
 	       }
 }
 
-void RemoveNode(DSLOP &dslop, int key){
-	if (dslop == NULL) return;
-	if (dslop->key > key){
-		RemoveNode(dslop,key);
-		Left_Balance(dslop);
-	} else if (dslop->key < key ){
-		RemoveNode(dslop,key);
-		Right_Balance(dslop);
-	} else {
-		// xoa nhu xoa nut root tren BST
-		xoaLTC(dslop,key);
-	}
-}*/
-int height(DSLOP N)  
-{  
-    if (N == NULL)  
-        return 0;  
-    return N->height;  
-}  
-  
-// A utility function to get maximum 
-// of two integers  
-int max(int a, int b)  
-{  
-    return (a > b)? a : b;  
-}  
-  
-/* Helper function that allocates a  
-   new node with the given key and  
-   NULL left and right pointers. */
-DSLOP newNode(int key, LOP lop)  
-{  
-    DSLOP node = new dslop(); 
-    node->key = key;  
-    node->left = NULL;  
-    node->right = NULL;  
-    node->height = 1; 
-    node->lop = lop;        
-    return(node);  
-}  
-  
-// A utility function to right 
-// rotate subtree rooted with y  
-// See the diagram given above.  
-DSLOP rightRotate(DSLOP y)  
-{  
-    DSLOP x = y->left;  
-    DSLOP T2 = x->right;  
-  
-    // Perform rotation  
-    x->right = y;  
-    y->left = T2;  
-  
-    // Update heights  
-    y->height = max(height(y->left),  
-                    height(y->right)) + 1;  
-    x->height = max(height(x->left),  
-                    height(x->right)) + 1;  
-  
-    // Return new root  
-    return x;  
-}  
-  
-// A utility function to left  
-// rotate subtree rooted with x  
-// See the diagram given above.  
-DSLOP leftRotate(DSLOP x)  
-{  
-    DSLOP y = x->right;  
-    DSLOP T2 = y->left;  
-  
-    // Perform rotation  
-    y->left = x;  
-    x->right = T2;  
-  
-    // Update heights  
-    x->height = max(height(x->left),  
-                    height(x->right)) + 1;  
-    y->height = max(height(y->left),  
-                    height(y->right)) + 1;  
-  
-    // Return new root  
-    return y;  
-}  
-  
-// Get Balance factor of node N  
-int getBalance(DSLOP N)  
-{  
-    if (N == NULL)  
-        return 0;  
-    return height(N->left) -  
-           height(N->right);  
-}  
-  
-DSLOP Create_AVLTree(DSLOP node, int key,LOP lop)  
-{  
-    /* 1. Perform the normal BST rotation */
-    if (node == NULL)  
-        return(newNode(key,lop));  
-  
-    if (key < node->key)  
-        node->left = Create_AVLTree(node->left, key,lop);  
-    else if (key > node->key)  
-        node->right = Create_AVLTree(node->right, key,lop);  
-    else // Equal keys not allowed  
-        return node;  
-  
-    /* 2. Update height of this ancestor node */
-    node->height = 1 + max(height(node->left),  
-                           height(node->right));  
-  
-    /* 3. Get the balance factor of this  
-        ancestor node to check whether  
-        this node became unbalanced */
-    int balance = getBalance(node);  
-  
-    // If this node becomes unbalanced, 
-    // then there are 4 cases  
-  
-    // Left Left Case  
-    if (balance > 1 && key < node->left->key)  
-        return rightRotate(node);  
-  
-    // Right Right Case  
-    if (balance < -1 && key > node->right->key)  
-        return leftRotate(node);  
-  
-    // Left Right Case  
-    if (balance > 1 && key > node->left->key)  
-    {  
-        node->left = leftRotate(node->left);  
-        return rightRotate(node);  
-    }  
-  
-    // Right Left Case  
-    if (balance < -1 && key < node->right->key)  
-    {  
-        node->right = rightRotate(node->right);  
-        return leftRotate(node);  
-    }  
-  
-    /* return the (unchanged) node pointer */
-    return node;  
-}  
-  
-/* Given a non-empty binary search tree,  
-return the node with minimum key value  
-found in that tree. Note that the entire  
-tree does not need to be searched. */
-DSLOP  minValueNode(DSLOP node)  
-{  
-    DSLOP current = node;  
-  
-    /* loop down to find the leftmost leaf */
-    while (current->left != NULL)  
-        current = current->left;  
-  
-    return current;  
-}  
-  
-// Recursive function to delete a node  
-// with given key from subtree with  
-// given root. It returns root of the  
-// modified subtree. 
 
-DSLOP deleteNode(DSLOP root, int key)  
+  
+
+  
+void Create_AVLTree(DSLOP &p,LOP lop)  
 {  
-      
-    // STEP 1: PERFORM STANDARD BST DELETE  
-    if (root == NULL)  
-        return root;  
-  
-    // If the key to be deleted is smaller  
-    // than the root's key, then it lies 
-    // in left subtree  
-    if ( key < root->key )  
-        root->left = deleteNode(root->left, key);  
-  
-    // If the key to be deleted is greater  
-    // than the root's key, then it lies  
-    // in right subtree  
-    else if( key > root->key )  
-        root->right = deleteNode(root->right, key);  
-  
-    // if key is same as root's key, then  
-    // This is the node to be deleted  
-    else
-    {  
-        // node with only one child or no child  
-        if( (root->left == NULL) || (root->right == NULL) )  
-        {  
-            DSLOP temp = root->left ?  
-                         root->left :  
-                         root->right;  
-  
-            // No child case  
-            if (temp == NULL)  
-            {  
-                temp = root;  
-                root = NULL;  
-            }  
-            else // One child case  
-            *root = *temp; // Copy the contents of  
-                           // the non-empty child  
-            free(temp);  
-        }  
-        else
-        {  
-            // node with two children: Get the inorder  
-            // successor (smallest in the right subtree)  
-            DSLOP temp = minValueNode(root->right);  
-  
-            // Copy the inorder successor's  
-            // data to this node  
-            root->lop = temp->lop;
-			root->key = temp->key;  
-  			//*root = *temp;
-            // Delete the inorder successor  
-            root->right = deleteNode(root->right,  
-                                     temp->key);  
-        }  
-    }  
-  
-    // If the tree had only one node 
-    // then return  
-    if (root == NULL)  
-    return root;  
-  
-    // STEP 2: UPDATE HEIGHT OF THE CURRENT NODE  
-    root->height = 1 + max(height(root->left),  
-                           height(root->right));  
-  
-    // STEP 3: GET THE BALANCE FACTOR OF  
-    // THIS NODE (to check whether this  
-    // node became unbalanced)  
-    int balance = getBalance(root);  
-  
-    // If this node becomes unbalanced,  
-    // then there are 4 cases  
-  
-    // Left Left Case  
-    if (balance > 1 &&  
-        getBalance(root->left) >= 0)  
-        return rightRotate(root);  
-  
-    // Left Right Case  
-    if (balance > 1 &&  
-        getBalance(root->left) < 0)  
-    {  
-        root->left = leftRotate(root->left);  
-        return rightRotate(root);  
-    }  
-  
-    // Right Right Case  
-    if (balance < -1 &&  
-        getBalance(root->right) <= 0)  
-        return leftRotate(root);  
-  
-    // Right Left Case  
-    if (balance < -1 &&  
-        getBalance(root->right) > 0)  
-    {  
-        root->right = rightRotate(root->right);  
-        return leftRotate(root);  
-    }  
-  
-    return root;  
+    if(p == NULL)    // nút p hi?n t?i s? là nút lá
+   {
+     p = new dslop;
+     p->lop = lop;
+     p->left = NULL;     p->right = NULL;  
+   }
+   else
+    if(lop.MALOPTC < p->lop.MALOPTC )
+      Create_AVLTree(p->left, lop);
+    else if(lop.MALOPTC > p->lop.MALOPTC ) Create_AVLTree(p->right, lop);
+
 }  
-  
-DSLOP search(DSLOP root, int x)
+
+DSLOP search(DSLOP root, int mltc)
 {
    DSLOP p = NULL;
    p = root;
-   while(p != NULL && x!=p->key)
-     if(x < p->key)
+   while(p != NULL && mltc!=p->lop.MALOPTC)
+     if(mltc < p->lop.MALOPTC)
          p = p->left;
       else
          p = p->right;
@@ -835,6 +366,7 @@ DSLOP search(DSLOP root, int x)
 }
 void Posorder(DSLOP root)
 {
+	
    if(root != NULL)    
 	   {
 	      Posorder(root->left);
@@ -940,9 +472,8 @@ void ThemLTC(DSLOP &root,DSMONHOC listMH, char nienKhoa[], int hocKy){
 		goto max;
 	}
 	tempLop.MAX = atoi(max);
-	root = Create_AVLTree(root,tempLop.MALOPTC,tempLop);
+	Create_AVLTree(root,tempLop);
 	LuuLTC(root);
-	Posorder(root);
 }
 }
 // xoa lop tin chi
@@ -951,7 +482,7 @@ void XoaLTC(DSLOP &root,int mltc){
 		cout << "Ma lop tin chi khong ton tai!!!";
 		return;
 	}
-	root = deleteNode(root,mltc);
+	xoaLTC(root,mltc);
 	cout << "DA XOA THANH CONG 1 LTC!!";
 }
 void SuaLTC(DSLOP &root,DSMONHOC listMH){
@@ -1438,7 +969,7 @@ void MenuLTC(DSLOP &root,DSMONHOC &listMH){
 				char ch[2];
 	
 				if  (confirm() == 0) return; 
-				deleteNode(root,mltc);
+				xoaLTC(root,mltc);
 				Sleep(1000);
 				LuuLTC(root);
 				break;
@@ -1624,7 +1155,7 @@ void DocLTC(DSLOP &root){
 	   	 docFile >>  tempLOP->MAX ;
 	     docFile >>  tempLOP->MIN;
 	     tempLOP->dssv = new DSDANGKY;
-	     root = Create_AVLTree(root,tempLOP->MALOPTC,*tempLOP);
+	      Create_AVLTree(root,*tempLOP);
 	     DocSVDK(*tempLOP,tempLOP->dssv);
 	}  while(!docFile.eof());
 	docFile.close();
@@ -2077,11 +1608,12 @@ void NhapDiem(DSLOP root){
 // j
 // tinh so tin chi cua lop do
 void getMaxTC(DSLOP root, char maLop[],float &n,int &nam){
-	if(root != NULL){
+		if(root != NULL){
 		  // tim xem sinh vien thuoc lop can tim co trong list dsdk neu co thi cong tin chi cua cai lop lai
+		
 	   	  for(SINHVIENDK *k=root->lop.dssv->pFirst; k!=NULL; k=k->next){
 	   	  		if( strcmp(KiemTraSV(listSV,k->MASV)->MALOP,maLop) == 0){
-	   	  			n= n + KiemTraMH(listMH,root->lop.MAMH)->STCLT + KiemTraMH(listMH,root->lop.MAMH)->STCTH;
+	   	  			n = n + KiemTraMH(listMH,root->lop.MAMH)->STCLT + KiemTraMH(listMH,root->lop.MAMH)->STCTH;
 	   	  			nam = KiemTraSV(listSV,k->MASV)->NAM;
 	   	  			break;
 	   	  		}
@@ -2090,11 +1622,12 @@ void getMaxTC(DSLOP root, char maLop[],float &n,int &nam){
 	      getMaxTC(root->right, maLop, n , nam);
 	   }
 }
+
 void getDiemSV(DSLOP root, char maSV[], float &diem){
 	if(root != NULL){
 		  // tim xem sinh vien thuoc lop can tim co trong list dsdk neu co thi cong tin chi cua cai lop lai
 	   	  for(SINHVIENDK *k=root->lop.dssv->pFirst; k!=NULL; k=k->next){
-	   	  		if( strcmp(KiemTraSV(listSV,k->MASV)->MASV,maSV) == 0){
+	   	  		if( strcmp( KiemTraSV(listSV,k->MASV)->MASV,maSV ) == 0){
 	   	  			if( k->DIEM == -1) diem++;
 	   	  			diem = diem + (KiemTraMH(listMH,root->lop.MAMH)->STCLT + KiemTraMH(listMH,root->lop.MAMH)->STCTH) * k->DIEM;
 	   	  			break;
@@ -2105,18 +1638,19 @@ void getDiemSV(DSLOP root, char maSV[], float &diem){
 	   }
 }
 void XuatDiemTB(DSSINHVIEN listSV, char maLop[], int nam){
+	int i=1;	
+	float solgTC = 0;
+	getMaxTC(root,maLop,solgTC,nam);
+	
 	system("cls");
 	cout << "\t  BANG THONG KE DIEM TRUNG BINH KHOA HOC" << endl;
 	cout << "\t  Lop: " << maLop << "\t  Nam nhap hoc: " << nam << endl;
 	cout << right<<setw(5)<< "STT|" << right<<setw(15)<< "MASV|" << right<<setw(15)<< "HO|" <<right<<setw(13)<< "TEN|" <<right<<setw(10)<< " DIEM TB|" << endl;
 	cout <<"-----------------------------------------------------------" << endl;
-	int i=1;	
-	float solgTC = 0;
-	getMaxTC(root,maLop,solgTC,nam);
+
 	for(SINHVIEN *k=listSV.pFirst; k!=NULL; k=k->next){
 		if(strcmp(k->MALOP,maLop) == 0){
 			float diemSV = 0;
-			
 			getDiemSV(root,k->MASV,diemSV);
 			
 			cout << right<<setw(4)<< i <<"|" << right<<setw(15)<< k->MASV <<"|" 
@@ -2136,11 +1670,10 @@ void InBangDiemTrungBinh(){
 	fflush(stdin);
 	gets(maLop);
 	InHoa(maLop);
-//	getMaxTC(root,maLop,n,nam);
 	
 	XuatDiemTB(listSV,maLop, nam);
 	
-	//XuatSVTheoDK(listSV,maLop);
+
 	gets(maLop);
 }
 void MenuQuanLyThongTin(){
