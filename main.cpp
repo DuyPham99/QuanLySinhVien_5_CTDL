@@ -2063,9 +2063,9 @@ void NhapDiem(DSLOP root){
 		gets(diem);
 		//
 		if(strlen(diem) == 0 || KiemTraSo(diem) == 0) return;
-		if(atoi(diem) < 0 || atoi(diem) > 10) continue;
+		if(atof(diem) < 0 || atof(diem) > 10) continue;
 		
-		k->DIEM = atoi(diem);
+		k->DIEM = atof(diem);
 		k=k->next;
 		i++;
 	}
